@@ -85,10 +85,23 @@ shows nothing the rest of the time."
                                phone plugin renders state ──BLE──▶ G2 HUD
 ```
 
-- **Sensors:** four MLH sound sensors (KY-037 class) on analog pins, one per
-  quadrant, mounted on a cardboard square with the mic elements facing outward.
-  Firmware samples each at 1 kHz, keeps a 50 ms peak, reports the loudest quadrant
-  and its level. Direction only; classification does not happen on the Arduino.
+- **Direction, three tiers. We don't yet know which sensors we have, so the
+  server takes direction from whichever tier is plugged in. Decide by 6 pm:**
+  - **Tier A, four MLH sound sensors (KY-037 class)** on Arduino analog pins, one
+    per quadrant, on a cardboard square with mic elements facing outward. Firmware
+    samples each at 1 kHz, keeps a 50 ms peak, reports loudest quadrant and level
+    over serial. Needs the MLH hardware table to have them. Someone checks now.
+  - **Tier B, the two USB webcams as a stereo mic pair.** Nearly every USB webcam
+    has a mic. Place them 1 m apart on the table or clip one to each side of a
+    cap. The laptop reads both as audio devices and computes left/right from
+    level difference plus time delay (GCC-PHAT), which gives better direction
+    than KY-037 sensors. Loses "behind"; the demo becomes left/right/near.
+    Zero new hardware. Verify tonight: plug a webcam in, open Audio MIDI Setup,
+    confirm it appears as an input.
+  - **Tier C, no direction.** Product is sound class plus urgency only, from the
+    G2 mic. Still a valid demo (doorbell, alarm, your name); loses the arrow.
+    Only if A and B both fail.
+  Classification never happens on the sensors; they carry direction only.
 - **Classification:** YAMNet (521 AudioSet classes, TFLite) on the laptop, over the
   16 kHz mono PCM the G2 already streams. Mapped to our seven classes. Runs on a
   0.975 s window.
@@ -120,16 +133,76 @@ at 150 ms. Calibrate on the real glasses at 5 pm; the simulator font differs.
 
 ## 7. Hardware we have and use
 
-| Item | Role |
-|---|---|
-| Even G2 + iPhone | HUD, mic, touch |
-| Arduino UNO Q (or MLH Arduino Uno) | reads 4 sound sensors, serial JSON |
-| 4x MLH sound sensors | direction quadrants |
-| laptop | server, YAMNet, Whisper |
-| phone hotspot or travel router | the network |
-| QNX Pi 4 | optional, see §5 |
+Confirmed in hand as of Sat 2:45 pm: Even G2, iPhone, ESP32-P4-EYE, QNX Pi,
+Linux Pi, Arduino UNO Q, 2 cameras, 2 brushless motors, printed arm parts.
+Confirmed missing at that time: jumper wires, servos, screws (teammate went to
+Burbank; outcome unknown). Never confirmed: MLH hardware table contents, and
+whether the two cameras have mics.
 
-Not used: P4-EYE, Linux Pi, USB cameras, brushless motors, arm parts.
+| Item | Status | Role |
+|---|---|---|
+| Even G2 + iPhone | have | HUD, mic, touch |
+| Arduino UNO Q | have | reads 4 sound sensors, serial JSON (Tier A only) |
+| 4x sound sensors | unknown, check MLH table | direction (Tier A) |
+| jumper wires, breadboard | missing, get from MLH table | Tier A wiring |
+| 2x USB cameras | have; mic unverified | stereo mic pair for direction (Tier B) |
+| laptop | have | server, YAMNet, Whisper |
+| phone hotspot | need a second phone | the network |
+| QNX Pi 4 | have | optional, see §5 |
+
+Not used: P4-EYE, Linux Pi, brushless motors, arm parts.
+
+## 7a. Things we have to get (check off tonight)
+
+**From the MLH hardware table, before it closes. One person goes now.**
+- [ ] 4x sound sensor modules (KY-037, KY-038, or any "sound detection" module
+      with an analog out pin). Ask for 5 so one can be dead.
+- [ ] Arduino Uno if the UNO Q turns out to be awkward. Any 5 V Arduino works.
+- [ ] Breadboard, 20 male-to-male jumper wires, 8 male-to-female jumpers.
+- [ ] USB-A to USB-B cable for the Arduino (the Uno cable, often forgotten).
+- [ ] Optional: a small speaker or buzzer module to play test sounds from the
+      Arduino itself, so the demo doesn't depend on a phone.
+
+**Already in the bag, confirm they're actually here**
+- [ ] Even G2, charged, paired, firmware updated, developer access on.
+- [ ] iPhone with the Even app 2.2.10 or newer, auto-lock set to Never.
+- [ ] 2x USB webcams plus whatever adapter the laptop needs (USB-C to USB-A).
+- [ ] A USB hub if the laptop has fewer than 3 ports: Arduino, 2 webcams.
+- [ ] Laptop chargers. Everyone's.
+- [ ] A second phone for the hotspot, so the demo phone isn't also the router.
+
+**Physical demo props, buy or improvise**
+- [ ] A piece of cardboard about 20 x 20 cm, tape, and a marker, for the
+      sensor square with L / R / F / B written on the sides.
+- [ ] A cap or headband if the sensors ride on the head instead of the table.
+- [ ] Rubber bands and zip ties.
+- [ ] A Bluetooth speaker or a second phone to play the test sounds at volume.
+      A phone speaker is too quiet in the hall.
+
+**Sound clips on a phone, downloaded tonight, not streamed at the table**
+- [ ] doorbell (two-tone), 3 s
+- [ ] knock on door, 2 s
+- [ ] smoke alarm beep, 5 s
+- [ ] police siren, 5 s
+- [ ] car horn, 2 s
+- [ ] dog bark, 2 s
+- [ ] 30 s of hallway crowd noise, for threshold tuning
+
+**Software and accounts, set up before 7 pm**
+- [ ] Even developer account with developer access enabled (whoever owns the Beta
+      group).
+- [ ] Node 20+, `npm install` inside the plugin folder (pulls the Even CLI and
+      simulator).
+- [ ] Python 3.11 or 3.12 for the server. TensorFlow and faster-whisper don't yet
+      ship wheels for 3.13 on every platform; check at install time.
+- [ ] YAMNet TFLite model file downloaded locally (the TF Hub archive), so the
+      server doesn't fetch it at the table.
+- [ ] faster-whisper `base.en` model pulled once so the first run isn't a download.
+- [ ] Deepgram API key as the captions fallback. Free tier is enough.
+- [ ] Gemini API key only if the long-press summary ships.
+- [ ] ffmpeg on the laptop (already installed on Dara's Mac).
+- [ ] Devpost project created, team members added, Even Realities and Beyond the
+      Digital challenges selected.
 
 ## 8. Prizes this hits, and how
 
