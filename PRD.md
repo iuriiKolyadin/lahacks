@@ -204,7 +204,7 @@ Not used: P4-EYE, breadboard, brushless motors, arm parts.
       group).
 - [ ] Node 20+, `npm install` inside the plugin folder (pulls the Even CLI and
       simulator).
-- [ ] Python 3.11 or 3.12 for the server. TensorFlow and faster-whisper don't yet
+- [ ] Python 3.11 or 3.12 for the server. TensorFlow and pvporcupine may not yet
       ship wheels for 3.13 on every platform; check at install time.
 - [ ] YAMNet TFLite model file downloaded locally (the TF Hub archive), so the
       server doesn't fetch it at the table.
