@@ -71,45 +71,57 @@ shows nothing the rest of the time."
 ## 5. System
 
 ```
- 4x sound sensors ──analog──▶ Arduino UNO Q (or any Arduino)
-                               loudest-quadrant + level, 20 Hz
-                               JSON over USB serial
-                                        │
- G2 mics ──BLE──▶ phone plugin ──ws──▶  ▼
-                               laptop server (FastAPI)
-                               - serial reader: direction + level
-                               - PCM from glasses: YAMNet class + Whisper captions
-                               - urgency state machine
-                               - one JSON state, pushed over the same ws
-                                        │
-                               phone plugin renders state ──BLE──▶ G2 HUD
+ G2 mics ──BLE──▶ phone plugin ──ws──▶ laptop server (FastAPI)
+   (PCM + direction tag)              - YAMNet class (+ Whisper captions)
+                                      - direction: Tier 0 tag, or Tier B
+ laptop mic + webcam mic ──USB──▶       two-mic time delay
+                                      - urgency state machine
+                                      - one JSON state, pushed back over ws
+                                               │
+                                phone plugin renders state ──BLE──▶ G2 HUD
+
+ optional edge node: Arduino UNO Q + webcam mic runs the classifier
+ (audio_classification brick) and publishes events over its web_ui WebSocket
 ```
 
-- **Direction, three tiers. We don't yet know which sensors we have, so the
-  server takes direction from whichever tier is plugged in. Decide by 6 pm:**
-  - **Tier A, four MLH sound sensors (KY-037 class)** on Arduino analog pins, one
-    per quadrant, on a cardboard square with mic elements facing outward. Firmware
-    samples each at 1 kHz, keeps a 50 ms peak, reports loudest quadrant and level
-    over serial. Needs the MLH hardware table to have them. Someone checks now.
-  - **Tier B, the two USB webcams as a stereo mic pair.** Nearly every USB webcam
-    has a mic. Place them 1 m apart on the table or clip one to each side of a
-    cap. The laptop reads both as audio devices and computes left/right from
-    level difference plus time delay (GCC-PHAT), which gives better direction
-    than KY-037 sensors. Loses "behind"; the demo becomes left/right/near.
-    Zero new hardware. Verify tonight: plug a webcam in, open Audio MIDI Setup,
-    confirm it appears as an input.
-  - **Tier C, no direction.** Product is sound class plus urgency only, from the
-    G2 mic. Still a valid demo (doorbell, alarm, your name); loses the arrow.
-    Only if A and B both fail.
-  Classification never happens on the sensors; they carry direction only.
-- **Classification:** YAMNet (521 AudioSet classes, TFLite) on the laptop, over the
-  16 kHz mono PCM the G2 already streams. Mapped to our seven classes. Runs on a
-  0.975 s window.
+- **Direction, three tiers. We have no sound-sensor modules, so the server
+  takes direction from whichever tier works. Test Tier 0 first, on real
+  glasses, before 6 pm:**
+  - **Tier 0, the G2's own direction tag.** SDK 0.0.16 `AudioEvent` has
+    `direction: number | null`, documented as "raw glasses direction tag for
+    this PCM frame", a signed int16 whose unit and range the SDK does not
+    convert. Null on the phone mic or old hosts. If current firmware fills it
+    in, direction is free and on-glasses, which is the best possible story.
+    Test: log `audio.direction` while a teammate talks from left, right, front,
+    behind. If the numbers move with position, map them to quadrants and ship.
+    If always null, fall to Tier B.
+  - **Tier B, two mics on the laptop.** The laptop's built-in mic plus a USB
+    webcam mic (nearly every webcam has one), placed about 1 m apart on the
+    table, or one on each side of a cap. The server reads both as audio devices
+    and computes left/right from level difference plus time delay (GCC-PHAT).
+    Loses "behind"; the demo becomes left/right/near. Zero new hardware.
+    Verify tonight: plug a webcam in, open Audio MIDI Setup, confirm it appears
+    as an input.
+  - **Tier C, no direction.** Product is sound class plus urgency only. Still a
+    valid demo (doorbell, alarm, your name); loses the arrow. Only if 0 and B
+    both fail.
+- **Classification:** YAMNet (521 AudioSet classes, TFLite) on the laptop,
+  mapped to our seven classes, 0.975 s window. **Input source is a decision, not
+  a given:** the G2 stream is "processed PCM" per the SDK, and Even markets
+  "AI voice isolation" on the 4-mic array, so doorbells and sirens may be
+  attenuated. Community apps (MuSe music ID, Birdie bird calls, Applied
+  Resonance machine sounds) do classify non-speech from the G2 mic, so it
+  probably works, but knocks are the risk. Fallbacks in order:
+  `AudioInputSource.Phone` (one-line change), then the laptop or webcam mic
+  feeding YAMNet directly with the glasses as display only. Edge-AI option for
+  the hardware story: run the classifier on the Arduino UNO Q's
+  `audio_classification` brick with a USB webcam mic and publish events over
+  its `web_ui` WebSocket; the laptop then only fuses and renders.
 - **Captions:** faster-whisper on the laptop on the same PCM, 2-second chunks,
   only while YAMNet says speech. Deepgram as fallback if latency is bad.
-- **Fusion rule:** a sound class from the glasses mic gets the direction of
-  whichever sensor peaked in the same 300 ms window. If no sensor peaked above
-  threshold, direction is "near" with no arrow.
+- **Fusion rule:** a sound class gets the direction reported in the same
+  300 ms window by whichever tier is active. If none, direction is "near" with
+  no arrow.
 - **Transport:** one WebSocket from the plugin to the laptop. Plugin sends PCM up,
   server sends state down. Whitelist entry is the laptop's LAN origin. Phone and
   laptop on the same hotspot, not venue Wi-Fi.
@@ -133,49 +145,40 @@ at 150 ms. Calibrate on the real glasses at 5 pm; the simulator font differs.
 
 ## 7. Hardware we have and use
 
-Confirmed in hand as of Sat 2:45 pm: Even G2, iPhone, ESP32-P4-EYE, QNX Pi,
-Linux Pi, Arduino UNO Q, 2 cameras, 2 brushless motors, printed arm parts.
-Confirmed missing at that time: jumper wires, servos, screws (teammate went to
-Burbank; outcome unknown). Never confirmed: MLH hardware table contents, and
-whether the two cameras have mics.
+Actual inventory, confirmed Sat 5:30 pm: Even G2 + iPhone, 2 brushless DC
+motors, camera(s), QNX Pi, breadboard, ESP32-P4-EYE, Arduino UNO Q. Nothing
+else. No sound sensors, no jumper wires, no MLH kit.
 
-| Item | Status | Role |
-|---|---|---|
-| Even G2 + iPhone | have | HUD, mic, touch |
-| Arduino UNO Q | have | reads 4 sound sensors, serial JSON (Tier A only) |
-| 4x sound sensors | unknown, check MLH table | direction (Tier A) |
-| jumper wires, breadboard | missing, get from MLH table | Tier A wiring |
-| 2x USB cameras | have; mic unverified | stereo mic pair for direction (Tier B) |
-| laptop | have | server, YAMNet, Whisper |
-| phone hotspot | need a second phone | the network |
-| QNX Pi 4 | have | optional, see §5 |
+| Item | Role |
+|---|---|
+| Even G2 + iPhone | HUD, mic, touch, and (if Tier 0 works) direction |
+| laptop | server, YAMNet, Whisper, Tier B mic |
+| USB camera(s) | webcam mic as the second mic for Tier B |
+| Arduino UNO Q | optional edge classifier node, needs a USB mic or webcam |
+| QNX Pi | optional, see §5 |
+| second phone | hotspot |
 
-Not used: P4-EYE, Linux Pi, brushless motors, arm parts.
+Not used: P4-EYE, breadboard, brushless motors, arm parts.
 
 ## 7a. Things we have to get (check off tonight)
 
-**From the MLH hardware table, before it closes. One person goes now.**
-- [ ] 4x sound sensor modules (KY-037, KY-038, or any "sound detection" module
-      with an analog out pin). Ask for 5 so one can be dead.
-- [ ] Arduino Uno if the UNO Q turns out to be awkward. Any 5 V Arduino works.
-- [ ] Breadboard, 20 male-to-male jumper wires, 8 male-to-female jumpers.
-- [ ] USB-A to USB-B cable for the Arduino (the Uno cable, often forgotten).
-- [ ] Optional: a small speaker or buzzer module to play test sounds from the
-      Arduino itself, so the demo doesn't depend on a phone.
+**Only if the MLH hardware table exists and has them (nice to have, not required)**
+- [ ] A USB microphone, any kind. Better than a webcam mic for Tier B.
+- [ ] 4x sound sensor modules with analog out, plus jumper wires, if they exist.
+      Would upgrade Tier B to four quadrants. Don't block on this.
 
 **Already in the bag, confirm they're actually here**
 - [ ] Even G2, charged, paired, firmware updated, developer access on.
 - [ ] iPhone with the Even app 2.2.10 or newer, auto-lock set to Never.
-- [ ] 2x USB webcams plus whatever adapter the laptop needs (USB-C to USB-A).
-- [ ] A USB hub if the laptop has fewer than 3 ports: Arduino, 2 webcams.
+- [ ] The USB camera(s) plus whatever adapter the laptop needs (USB-C to USB-A).
+      Confirm at least one shows up as an audio input.
+- [ ] A USB hub if the laptop runs short of ports.
 - [ ] Laptop chargers. Everyone's.
 - [ ] A second phone for the hotspot, so the demo phone isn't also the router.
 
 **Physical demo props, buy or improvise**
-- [ ] A piece of cardboard about 20 x 20 cm, tape, and a marker, for the
-      sensor square with L / R / F / B written on the sides.
-- [ ] A cap or headband if the sensors ride on the head instead of the table.
-- [ ] Rubber bands and zip ties.
+- [ ] Tape and a marker, for L / R labels on the table so judges see the setup.
+- [ ] A cap if the webcam mic rides on the head for Tier B.
 - [ ] A Bluetooth speaker or a second phone to play the test sounds at volume.
       A phone speaker is too quiet in the hall.
 
@@ -221,19 +224,19 @@ Not used: P4-EYE, Linux Pi, brushless motors, arm parts.
 |---|---|---|
 | Glasses | plugin: WebSocket, PCM up, state render, lifecycle, Beta packaging | state JSON from a mock server renders every §6 state on the real G2 |
 | Audio | server: YAMNet + Whisper on PCM, class mapping, name match | a recorded doorbell and a spoken name produce correct events in the log |
-| Sensors | firmware + sensor board + serial reader + fusion | tapping each side of the board shows the right quadrant in the server log |
+| Direction | Tier 0 test on real glasses, then Tier B two-mic reader, then fusion | talking from left and right shows the right side in the server log |
 | 4th (if any) | Devpost page, video, README, QNX node | submission draft exists by 10 pm |
 
 Every node has a mock so nobody waits: server `--mock` emits fake events; plugin
-has a "demo" button cycling §6 states; sensor reader has `--mock`.
+has a "demo" button cycling §6 states; direction reader has `--mock`.
 
 ## 10. Timeline
 
 | When | Checkpoint |
 |---|---|
-| 5:00 pm | Minimal template on the real G2, one tap event seen. Visit Even table. |
+| 5:30 pm | asr template on the real G2, log `audio.direction` from 4 positions, dump PCM to a WAV while playing doorbell/siren/knock. Decides Tier 0 and the classifier input. Visit Even table with any questions. |
 | 6:00 pm | Server emits mock state; plugin renders it on the G2 over the hotspot. |
-| 7:00 pm | Sensors: 4 quadrants correct on the bench. YAMNet classifies a doorbell clip. Decide QNX. |
+| 7:00 pm | Direction tier chosen and working on the bench. YAMNet classifies a doorbell clip from the chosen input. Decide QNX. |
 | 8:00 pm | Even table closes. Any SDK question must be asked before this. |
 | 9:00 pm | PCM from the glasses reaches the server; YAMNet runs on live audio. |
 | 11:00 pm | **Hard checkpoint: full demo loop works end to end once.** If not, cut captions and ship cue + direction only. |
@@ -247,7 +250,9 @@ has a "demo" button cycling §6 states; sensor reader has `--mock`.
 | Risk | How we find out | Fallback |
 |---|---|---|
 | Venue noise makes YAMNet flaky | 7 pm bench test in the hall | demo with phone-played clean clips at the table; raise thresholds |
-| KY-037 sensors are near-binary, poor direction | 7 pm bench test | use 2 USB mics on the laptop for left/right only; "behind" from the single G2 stream level drop |
+| G2 `direction` tag is always null on current firmware | 5:30 pm test | Tier B two-mic time delay on the laptop |
+| G2 stream strips non-speech sounds (voice isolation) | 5:30 pm WAV test | `AudioInputSource.Phone`, then laptop/webcam mic into YAMNet |
+| No webcam has a mic | 5:30 pm | laptop mic only; Tier C, no direction |
 | Mic stream dies on phone lock | 1 am test | re-enable `audioControl` and reconnect ws on foreground; persist state in localStorage |
 | Phone can't reach laptop | 6 pm | hotspot off a second phone; if still blocked, cloudflared tunnel with https whitelist |
 | Whisper latency over 2 s | 9 pm | Deepgram streaming, or cut captions entirely (cue + direction is still the product) |
@@ -265,7 +270,8 @@ has a "demo" button cycling §6 states; sensor reader has `--mock`.
 1. App name. "Earshot" unless someone objects.
 2. Whose name is the demo name? Use the judge's name typed into the phone page at
    the table, or a fixed teammate name.
-3. QNX node: yes or no. Costs one person 4 hours.
+3. QNX node: yes or no. Costs one person 4 hours. Without a Pi Camera it can only
+   be the classifier-on-sensor-stream role, and we have no sensors, so likely no.
 4. Who has the Even developer account the Beta group goes under?
 
 ## 14. Prior art we're building on, for the Devpost page
