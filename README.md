@@ -46,7 +46,7 @@ choices are on the phone page.
 |---|---|---|
 | `plugin/` | the Even Hub app: streams glasses audio up, draws one line on the lenses | Wendy |
 | `server/` | the hub: YAMNet label map, thresholds, direction from the G2 tag, the state machine, mock mode | Nikhil, state machine spec by Dara |
-| `audio_classification/` | TensorFlow Lite audio example with `CueLink.swift`: runs YAMNet on a phone and returns scores to the hub | Nikhil |
+| `audio_classification/` | TensorFlow Lite audio example with `EarshotLink.swift`: runs YAMNet on a phone and returns scores to the hub | Nikhil |
 | `android-companion/` | Android app: rings like a call on urgent sounds, speaks replies, shows a type-here page over the lock screen | Iurii |
 | `tools/` | `eval.py` scores the pipeline on saved clips; `dirtest.py` analyses the direction tag | Dara |
 | `docs/` | research, eval results, direction findings, `ARCHITECTURE.md` (the sound path end to end), `BRIDGE.md` (glasses-to-phone protocol), the pitch deck copy | |
