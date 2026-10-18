@@ -7,6 +7,8 @@ import {
 import { startLink, serverUrl, type Link } from './link'
 import { createHud, DEMO_STATES } from './hud'
 import { createAlertFeed } from './alerts'
+import { createMenu } from './menu'
+import type { HudState } from './link'
 import { mountUi, setStatus, setHud, setMic } from './ui'
 
 mountUi()
@@ -29,6 +31,20 @@ if (created !== 0) {
   console.error('Failed to create startup page')
 }
 
+// ── Sound menu (long-press) ────────────────────────────────────────
+
+const menu = createMenu()
+
+// Every HUD state goes through here. An alarm closes the menu without saving:
+// the menu must never hide a fire alarm.
+function onState(s: HudState) {
+  if (menu.isOpen() && s.state === 'alarm') {
+    menu.cancel()
+    hud.hideMenu()
+  }
+  hud.render(s)
+}
+
 // ── Server link, or ?demo=1 ────────────────────────────────────────
 
 const demo = new URLSearchParams(location.search).get('demo') === '1'
@@ -37,13 +53,13 @@ let demoTimer: number | null = null
 
 if (demo) {
   let i = 0
-  const step = () => hud.render(DEMO_STATES[i++ % DEMO_STATES.length])
+  const step = () => onState(DEMO_STATES[i++ % DEMO_STATES.length])
   step()
   demoTimer = window.setInterval(step, 4000)
   setStatus('listening', 'Demo mode · no server')
 } else {
   const url = serverUrl()
-  link = startLink(url, hud.render, status => {
+  link = startLink(url, onState, status => {
     if (status === 'open') {
       setStatus('listening', `Connected · ${url}`)
       alerts.resend() // anything sent while the socket was down was dropped
@@ -106,8 +122,9 @@ function eventTypeOf(envelope?: { eventType?: OsEventTypeList }): OsEventTypeLis
   return envelope.eventType ?? OsEventTypeList.CLICK_EVENT
 }
 
-// Double-tap → `shutDownPageContainer(1)` is checked first and on every
-// envelope, so the wearer can always exit. SYSTEM_EXIT_EVENT fires on confirm.
+// Touchpad, menu open (menu.ts): swipe moves, tap changes, long-press saves,
+// double-tap closes without saving. Menu closed: long-press opens it and
+// double-tap → `shutDownPageContainer(1)` exits; SYSTEM_EXIT_EVENT fires on confirm.
 const unsubscribe = bridge.onEvenHubEvent(event => {
   const audio = event.audioEvent
   if (audio?.audioPcm) {
@@ -119,14 +136,41 @@ const unsubscribe = bridge.onEvenHubEvent(event => {
 
   const sysType = eventTypeOf(event.sysEvent)
   const textType = eventTypeOf(event.textEvent)
+  const is = (t: OsEventTypeList) => sysType === t || textType === t
 
-  if (sysType === OsEventTypeList.DOUBLE_CLICK_EVENT || textType === OsEventTypeList.DOUBLE_CLICK_EVENT) {
-    bridge.shutDownPageContainer(1)
+  if (is(OsEventTypeList.SYSTEM_EXIT_EVENT) || is(OsEventTypeList.ABNORMAL_EXIT_EVENT)) {
+    cleanup()
     return
   }
 
-  if (sysType === OsEventTypeList.SYSTEM_EXIT_EVENT || sysType === OsEventTypeList.ABNORMAL_EXIT_EVENT) {
-    cleanup()
+  if (menu.isOpen()) {
+    if (is(OsEventTypeList.DOUBLE_CLICK_EVENT)) {
+      menu.cancel()
+      hud.hideMenu()
+      return
+    }
+    if (is(OsEventTypeList.LONG_PRESS_EVENT)) {
+      menu.save()
+      hud.hideMenu()
+      return
+    }
+    if (is(OsEventTypeList.SCROLL_TOP_EVENT)) menu.up()
+    else if (is(OsEventTypeList.SCROLL_BOTTOM_EVENT)) menu.down()
+    else if (is(OsEventTypeList.CLICK_EVENT) && menu.tap()) {
+      hud.hideMenu() // DONE
+      return
+    }
+    hud.showMenu(menu.lines())
+    return
+  }
+
+  if (is(OsEventTypeList.DOUBLE_CLICK_EVENT)) {
+    bridge.shutDownPageContainer(1)
+    return
+  }
+  if (is(OsEventTypeList.LONG_PRESS_EVENT)) {
+    menu.open()
+    hud.showMenu(menu.lines())
   }
 })
 

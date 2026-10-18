@@ -1,8 +1,8 @@
-import { LABELS, LABEL_NAMES, LOCKED, setTier, tierOf, onTiersChanged, type Tier } from './settings'
+import { LABELS, LABEL_NAMES, LOCKED, setChoice, choiceOf, onTiersChanged, type Choice, type Tier } from './settings'
 
 type Status = 'connecting' | 'listening' | 'paused' | 'error'
 
-const TIER_NAMES: Record<Tier, string> = { critical: 'Critical', medium: 'Medium', normal: 'Normal' }
+const CHOICE_NAMES: Record<Choice, string> = { critical: 'Critical', medium: 'Medium', normal: 'Normal', off: 'Off' }
 
 let statusEl: HTMLDivElement
 let hudEl: HTMLDivElement
@@ -24,7 +24,7 @@ export function mountUi() {
       </section>
       <section class="tiers">
         <div class="label">Alert levels</div>
-        <p class="hint">Critical shows spaced capitals in a frame and flashes fast. Medium shows capitals and flashes slowly. Normal is dimmer and blinks twice. Critical and Medium also ring the Earshot Companion phone like a call.</p>
+        <p class="hint">Off sounds never show. Critical shows spaced capitals in a frame and flashes fast. Medium shows capitals and flashes slowly. Normal is dimmer and blinks twice. Critical and Medium also ring the Earshot Companion phone like a call. On the glasses: long-press for the same menu.</p>
         <div id="tier-rows"></div>
       </section>
       <footer>Double-tap the glasses temple to exit.</footer>
@@ -37,19 +37,19 @@ export function mountUi() {
   injectStyles()
 }
 
-// One row per sound with a Critical / Medium / Normal picker. alarm and siren are locked.
+// One row per sound with a Critical / Medium / Normal / Off picker. alarm and siren are locked.
 function mountTiers(root: HTMLDivElement) {
   const draw = () => {
     root.innerHTML = LABELS.map(label => {
       const locked = LOCKED.has(label)
-      const buttons = (Object.keys(TIER_NAMES) as Tier[])
+      const buttons = (Object.keys(CHOICE_NAMES) as Choice[])
         .map(t => {
-          const on = tierOf(label) === t
+          const on = choiceOf(label) === t
           return `<button class="tier-btn tier-${t}${on ? ' on' : ''}" data-label="${label}" data-tier="${t}"
-            ${locked ? 'disabled' : ''} aria-pressed="${on}">${TIER_NAMES[t]}</button>`
+            ${locked ? 'disabled' : ''} aria-pressed="${on}">${CHOICE_NAMES[t]}</button>`
         })
         .join('')
-      return `<div class="tier-row"><span class="tier-name tier-text-${tierOf(label)}">${LABEL_NAMES[label]}${
+      return `<div class="tier-row"><span class="tier-name tier-text-${choiceOf(label)}">${LABEL_NAMES[label]}${
         locked ? ' <small>(always critical)</small>' : ''
       }</span><span class="tier-picker">${buttons}</span></div>`
     }).join('')
@@ -57,7 +57,7 @@ function mountTiers(root: HTMLDivElement) {
   root.addEventListener('click', e => {
     const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-label]')
     if (!btn || btn.disabled) return
-    setTier(btn.dataset.label as (typeof LABELS)[number], btn.dataset.tier as Tier)
+    setChoice(btn.dataset.label as (typeof LABELS)[number], btn.dataset.tier as Choice)
   })
   onTiersChanged(draw)
   draw()
@@ -111,6 +111,7 @@ function injectStyles() {
     .tier-text-critical { color: #FF453A; font-weight: 600; }
     .tier-text-medium { color: #FF9F0A; font-weight: 600; }
     .tier-text-normal { color: #E5E5E5; }
+    .tier-text-off { color: #7B7B7B; text-decoration: line-through; }
     .tiers { background: #2E2E2E; border: 1px solid #3E3E3E; border-radius: 12px; padding: 16px 20px; }
     .hint { font-size: 12px; color: #919191; margin: 4px 0 12px; }
     .tier-row { display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -125,6 +126,7 @@ function injectStyles() {
     .tier-critical.on { color: #FF453A; border-color: #FF453A; background: rgba(255,69,58,0.12); }
     .tier-medium.on { color: #FF9F0A; border-color: #FF9F0A; background: rgba(255,159,10,0.12); }
     .tier-normal.on { color: #E5E5E5; border-color: #7B7B7B; background: rgba(229,229,229,0.08); }
+    .tier-off.on { color: #A7A7A7; border-color: #5B5B5B; background: rgba(120,120,120,0.12); }
   `
   const style = document.createElement('style')
   style.textContent = css

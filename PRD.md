@@ -35,8 +35,10 @@ from, then the display goes blank again.
   own voice never triggers it; the SDK tells us which frames are the wearer.
 - Direction comes from the glasses themselves. Left and right work. Front
   and behind cannot be told apart and are drawn as "center".
-- The wearer picks an alert tier per sound on the phone page: critical,
-  medium, or normal. Alarm and siren are locked to critical.
+- The wearer picks which sounds to see and an alert tier for each (off,
+  normal, medium, critical), on the glasses (long-press opens the menu, swipe
+  moves, tap cycles, long-press or DONE saves, double-tap cancels) or on the
+  phone page. Alarm and siren are locked on at critical.
 - An Android companion app answers for the wearer. When the glasses flash a
   critical or medium sound, the phone rings like an incoming call and shows
   the sound, its direction, and one button per reply. A button speaks the

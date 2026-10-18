@@ -19,7 +19,7 @@ import {
   type EvenAppBridge,
 } from '@evenrealities/even_hub_sdk'
 import type { HudState } from './link'
-import { tierOf, onTiersChanged, type Tier } from './settings'
+import { tierOf, isOn, onTiersChanged, type Tier } from './settings'
 
 const ID = 1
 const NAME = 'hud'
@@ -140,6 +140,10 @@ export interface Hud {
   /** Pass to createStartUpPageContainer. */
   container: TextContainerProperty
   render(state: HudState): void
+  /** Draw the sound menu (menu.ts) instead of the HUD. Call again on every change. */
+  showMenu(lines: string[]): void
+  /** Back to the HUD, redrawn as it is now. */
+  hideMenu(): void
 }
 
 export function createHud(
@@ -172,6 +176,7 @@ export function createHud(
   let ttlTimer: number | null = null
   let speechHoldTimer: number | null = null
   let flashTimer: number | null = null
+  let menuOpen = false
 
   function flush() {
     writeTimer = null
@@ -201,10 +206,11 @@ export function createHud(
   // Draw `current` at its tier and (re)start that tier's flashing. Called on
   // every new state and whenever the wearer changes a tier.
   function paint() {
-    const lines = linesFor(current)
-    const tier = tierFor(current)
     if (flashTimer !== null) clearInterval(flashTimer)
     flashTimer = null
+    if (menuOpen) return // the menu owns the display; current is drawn when it closes
+    const lines = linesFor(current)
+    const tier = tierFor(current)
     want = { content: lines.length ? centerBlock(lines) : ' ', level: LEVEL[tier] }
     if (lines.length) {
       const { ms, dim, times } = FLASH[tier]
@@ -238,6 +244,7 @@ export function createHud(
   onTiersChanged(paint)
 
   function render(s: HudState) {
+    if (!isOn(s.label)) s = { state: 'idle' } // the wearer switched this sound off
     if (speechHoldTimer !== null) clearTimeout(speechHoldTimer)
     speechHoldTimer = null
     // Speech stays up at least 1 s; only a drop to idle waits, anything else replaces it now.
@@ -249,7 +256,21 @@ export function createHud(
     show(s)
   }
 
-  return { container, render }
+  function showMenu(lines: string[]) {
+    menuOpen = true
+    if (flashTimer !== null) clearInterval(flashTimer)
+    flashTimer = null
+    want = { content: lines.join('\n'), level: LEVEL.critical }
+    schedule()
+  }
+
+  function hideMenu() {
+    if (!menuOpen) return
+    menuOpen = false
+    paint()
+  }
+
+  return { container, render, showMenu, hideMenu }
 }
 
 /** ?demo=1: cycles idle, cue, speech, name, alarm every 4 s with no server. */

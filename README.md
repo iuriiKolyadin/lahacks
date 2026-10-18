@@ -27,6 +27,12 @@ else speaking. Alarms and sirens take the whole display. Direction comes
 from the glasses' own microphone array: left and right, with front and behind
 drawn as "center" because the glasses cannot tell them apart.
 
+The wearer chooses which sounds to see, and how loudly each one alerts, right
+on the glasses: long-press the touchpad, swipe to a sound, tap to cycle it
+off, normal, medium, critical, then long-press (or tap DONE) to save.
+Double-tap leaves without saving. Alarm and siren are always on. The same
+choices are on the phone page.
+
 ## How it works
 
 ```
