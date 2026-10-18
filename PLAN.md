@@ -150,7 +150,8 @@ Build, in this order:
 6. On the real glasses: `npx evenhub qr --url http://YOUR_IP:5173` with the
    phone on the hotspot, your fake server running. Then
    `npm run build && npx evenhub pack app.json dist -o earshot.ehpk` and
-   check the packer accepts the manifest. Commit the `.ehpk`.
+   check the packer accepts the manifest. Do not commit the `.ehpk`;
+   `.gitignore` excludes it, and Dara packs a fresh one at submission.
 
 Done when: with your fake server, the real glasses show every row of the
 section 3 table, readable and centered. Double tap exits. After the phone is
@@ -299,33 +300,33 @@ in the meantime:
   not be. Post the answers in the chat.
 
 After 9, code:
-3. `tools/record.py`. A WebSocket server on port 8000 that accepts the
+1. `tools/record.py`. A WebSocket server on port 8000 that accepts the
    plugin's frames and writes `--out name.wav` (16 kHz mono) and `name.jsonl`
    with `ts`, `direction`, `speakerRole`, RMS per frame. Point the plugin at
    your laptop, record 30 s each of silence, a doorbell, a siren, knocks,
    and someone talking from four sides. These are the ground truth clips.
-4. `tools/eval.py`. Loads YAMNet itself (same 20 lines as Nikhil's
+2. `tools/eval.py`. Loads YAMNet itself (same 20 lines as Nikhil's
    `classify.py`, copied, so this never depends on his code being in a
    runnable state) and runs every WAV in `server/clips/` and your recordings
    in 0.5 s steps. Prints expected label, top label, top score, and time to
    first correct, then a confusion table. This is where the pitch numbers and
    the threshold choices come from.
-5. If the Tier 0 numbers in `docs/direction-test.md` separate by position,
+3. If the Tier 0 numbers in `docs/direction-test.md` separate by position,
    write the mapping from the tag to left, right, front, behind and send it
    to Nikhil in the chat.
 
 After 9, integration and submission:
-6. Devpost project: create it, add all four, select the challenges Even
+4. Devpost project: create it, add all four, select the challenges Even
    Realities, Beyond the Digital, Applied Intelligence, paste the PRD demo
    table as the description.
-7. Nikhil's laptop runs `python main.py`; Wendy's `app.json` whitelist gets
+5. Nikhil's laptop runs `python main.py`; Wendy's `app.json` whitelist gets
    Nikhil's IP; the ESP32 posts to Nikhil's IP. Run the demo script from the
    PRD start to finish. Film it rough; that is the backup video.
-8. Package Wendy's build and push it to a Beta group under your account.
+6. Package Wendy's build and push it to a Beta group under your account.
    Install from Me, then Beta tester, on the phone the G2 is paired to; add
    that phone's Even account email to the Beta group. Lock the phone 5 minutes, reopen, check
    states resume. Deny the mic permission once and check nothing crashes.
-9. Sunday morning: final package and Beta push, the 2 to 3 minute video
+7. Sunday morning: final package and Beta push, the 2 to 3 minute video
    (20 s pitch, the six demo steps, 20 s on how it works), the README section
    "Install and run on G2", five rehearsals with someone who has not worn the
    glasses, submit.

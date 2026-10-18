@@ -73,7 +73,7 @@ a stretch.
 | R1 | P0 | Sound cue. Classify G2 mic audio; show one line for doorbell, knock, siren, alarm, horn, dog. | Each of the six test clips, played from a phone 1 m away, shows the right label within 1 s, 4 of 5 tries. |
 | R2 | P0 | Alarm tier. Siren or alarm takes the whole display, full brightness, suppresses all other cues until 2 s after it stops. | Siren clip plus a doorbell clip at the same time shows only ALARM. |
 | R3 | P0 | Blank by default. | 30 s of hallway noise with nobody addressing the wearer shows nothing. |
-| R4 | P0 | Runs as an Even Hub Beta build on a physical G2. | Installed from the Beta group on Dara's phone; survives a 5-minute phone lock; double-tap exits via the system dialog. |
+| R4 | P0 | Runs as an Even Hub Beta build on a physical G2. | Installed from the Beta group on the phone the G2 is paired to; survives a 5-minute phone lock; double-tap exits via the system dialog. |
 | R5 | P1 | Name flash. The demo name, spoken from 2 m, shows YOUR NAME. | 4 of 5 tries; zero false flashes in 60 s of other speech. |
 | R6 | P1 | Speech cue. Someone other than the wearer talking shows `speech`; the wearer's own voice does not. | Wearer talks: nothing. Teammate talks: cue within 1 s. |
 | R7 | P1 | Direction. Every cue carries left, right, front, or behind. | Correct side 9 of 10 at 1 m. Source may be the G2's own direction tag or an external two-mic node; see PLAN.md. |
@@ -105,13 +105,13 @@ a stretch.
 | The G2 `direction` tag is null on current firmware | medium | External two-mic node if mic modules exist; otherwise ship without R7. |
 | Venue noise causes false cues | high | Higher thresholds, require two consecutive windows, demo with a speaker and clean clips. |
 | Phone can't reach the laptop | medium | Everything on one hotspot; whitelist the exact origin. |
-| Packaging or Beta flow rejects us at the last minute | low | Pack a throwaway build at 8 pm Saturday. |
+| Packaging or Beta flow rejects us at the last minute | low | Pack a throwaway build at integration tonight, not Sunday morning. |
 
-## 11. Open questions (answer by 6 pm Saturday)
+## 11. Open questions (answer tonight)
 
 1. Demo name. A teammate's first name, two syllables.
 2. Does the G2 `direction` field carry real data on current firmware? Decided
-   by the 5:30 test in PLAN.md.
+   by the Tier 0 test, PLAN.md section 4.3.
 3. Does the MLH hardware table exist, and does it have microphone modules?
 
 ## 12. Decisions made
