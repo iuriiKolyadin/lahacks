@@ -1,0 +1,26 @@
+{
+  "name": "earshot-glasses-app",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "assets": "node scripts/fetch-model.mjs",
+    "dev": "npm run assets && vite",
+    "build": "npm run assets && tsc --noEmit && vite build",
+    "check": "npm run build && node scripts/check.mjs",
+    "phone":"npm run assets && node scripts/phone.mjs",
+    "simulate": "evenhub-simulator http://localhost:5173",
+    "pack": "npm run build && evenhub pack app.json dist -o earshot.ehpk --sdk-ver 0.0.16"
+  },
+  "dependencies": {
+    "@evenrealities/even_hub_sdk": "0.0.16",
+    "@mediapipe/tasks-audio": "1.0.1"
+  },
+  "devDependencies": {
+    "@evenrealities/evenhub-cli": "0.1.14",
+    "@evenrealities/evenhub-simulator": "0.9.5",
+    "playwright-core": "1.63.0",
+    "typescript": "5.7.3",
+    "vite": "5.4.21"
+  }
+}
