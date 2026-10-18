@@ -1,11 +1,11 @@
 // The sound menu on the glasses: which sounds to show, and at what level.
 //
-//   long-press (HUD)    open the menu
+//   tap (HUD)           open the menu (long-press opens Even AI instead)
 //   swipe up / down     move the cursor
 //   tap                 on a sound: off -> normal -> medium -> critical -> off
 //                       on ALL SOUNDS: everything on, or everything off if all were on
 //                       on DONE: save and close
-//   long-press (menu)   save and close
+//   long-press (menu)   save and close, if the glasses pass it through
 //   double-tap (menu)   close without saving
 //
 // Changes are a draft until saved, so a wrong tap can be thrown away. Alarm

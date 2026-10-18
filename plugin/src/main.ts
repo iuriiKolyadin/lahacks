@@ -31,7 +31,7 @@ if (created !== 0) {
   console.error('Failed to create startup page')
 }
 
-// ── Sound menu (long-press) ────────────────────────────────────────
+// ── Sound menu (tap) ──────────────────────────────────────────────
 
 const menu = createMenu()
 
@@ -123,8 +123,10 @@ function eventTypeOf(envelope?: { eventType?: OsEventTypeList }): OsEventTypeLis
 }
 
 // Touchpad, menu open (menu.ts): swipe moves, tap changes, long-press saves,
-// double-tap closes without saving. Menu closed: long-press opens it and
+// double-tap closes without saving. Menu closed: tap opens it and
 // double-tap → `shutDownPageContainer(1)` exits; SYSTEM_EXIT_EVENT fires on confirm.
+// Long-press on the touchpad opens Even AI before it reaches the plugin, so
+// it cannot be the way into the menu; it still opens it when it does arrive.
 const unsubscribe = bridge.onEvenHubEvent(event => {
   const audio = event.audioEvent
   if (audio?.audioPcm) {
@@ -168,7 +170,7 @@ const unsubscribe = bridge.onEvenHubEvent(event => {
     bridge.shutDownPageContainer(1)
     return
   }
-  if (is(OsEventTypeList.LONG_PRESS_EVENT)) {
+  if (is(OsEventTypeList.CLICK_EVENT) || is(OsEventTypeList.LONG_PRESS_EVENT)) {
     menu.open()
     hud.showMenu(menu.lines())
   }

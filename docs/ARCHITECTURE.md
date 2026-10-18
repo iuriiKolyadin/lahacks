@@ -467,10 +467,11 @@ Quiet room reads -8/-17, which is center.
 
   Alarm and siren are locked to critical, drawn as plain `ALARM` / `SIREN`.
   "Bigger" is spacing and the frame, because there is no font size.
-- **Sound menu on the glasses** (`plugin/src/menu.ts`). Long-press opens it
+- **Sound menu on the glasses** (`plugin/src/menu.ts`). A tap opens it
+  (long-press on the touchpad opens Even AI and never reaches the plugin)
   in the same text container: `All sounds`, one row per sound with its level,
   and `[ DONE ]`. Swipe up/down moves the cursor, tap cycles a sound off →
-  normal → medium → critical → off, long-press or DONE saves, double-tap
+  normal → medium → critical → off, DONE (or a long-press, if it arrives) saves, double-tap
   closes without saving. Edits are a draft until saved. Alarm and siren are
   locked on. A sound set to off is dropped in the plugin (`render()` treats
   it as idle); the server does not know about the choices. An alarm arriving
