@@ -1,4 +1,4 @@
-"""The HUD state machine (PLAN.md section 4.2 step 5).
+"""The HUD state machine (PRD.md section 5).
 
 Feed it classifier windows with observe(), and call step() on a timer. step()
 returns a state frame for the plugin when what the HUD should show changes,

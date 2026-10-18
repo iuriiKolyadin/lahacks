@@ -4,7 +4,7 @@
     python main.py --mock     # cycles every HUD state every 5 s, no classifier
 
 Sockets (all on port 8000):
-  /ws/glasses     the plugin. Sends audio frames (PLAN.md section 3),
+  /ws/glasses     the plugin. Sends audio frames (PRD.md section 5),
                   receives HUD state frames.
   /ws/classifier  the iPhone YAMNet app. Receives every audio frame unchanged,
                   sends back {"t":"result","ts":<newest audio ts>,"inference_ms":n,

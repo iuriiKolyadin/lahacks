@@ -1,5 +1,5 @@
 """Pretends to be the plugin: streams a WAV (or silence) to /ws/glasses in real
-time, in the PLAN.md section 3 format, and prints every HUD state it gets back.
+time, in the PRD.md section 5 format, and prints every HUD state it gets back.
 
     python fake_glasses.py --wav clips/doorbell_1.wav
     python fake_glasses.py                      # silence, forever
