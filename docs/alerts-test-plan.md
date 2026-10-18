@@ -34,7 +34,7 @@ Done when writing the change; re-run after any edit to these files.
 Install the new APK, open the app once, and clear every ❌ in the checklist,
 including the new **Sound-alert calls on**. Use the **Sound alerts** buttons
 in the app, or over USB `node tools/bridge-client.mjs alert <label> <dir> <tier>`
-(Ctrl+C ends the alert). Watch `adb logcat -s Earshot`.
+(Ctrl+C ends the alert). Watch `adb logcat -s Cue`.
 
 | # | Setup | Action | Pass |
 |---|---|---|---|

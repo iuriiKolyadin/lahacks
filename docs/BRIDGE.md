@@ -1,4 +1,4 @@
-# Earshot bridge: glasses app ⇄ Android companion
+# Cue bridge: glasses app ⇄ Android companion
 
 Protocol version **1**. Owner: Iurii (`android-companion/`). Change this only
 in the group chat, and bump `v` if a change breaks the other side.
@@ -37,7 +37,7 @@ const ws = new WebSocket('ws://127.0.0.1:8765');
 Messages are identical in both modes. The relay forwards frames unchanged
 and only adds an `error` with `code: "no_phone"` if no phone is connected.
 
-**Through the Earshot server (sound alerts).** The plugin already streams to
+**Through the Cue server (sound alerts).** The plugin already streams to
 `server/main.py`, which relays `say` and `alert` frames unchanged to
 `/ws/pendant`. On the companion: **Connection → Connect to a laptop**, URL
 `ws://SERVER_IP:8000/ws/pendant`, **Apply**, allow **Local network**. Works

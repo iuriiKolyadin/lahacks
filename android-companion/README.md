@@ -1,6 +1,6 @@
-# Earshot Companion (Android)
+# Cue Companion (Android)
 
-The phone half of Earshot's "answer for me" feature. When the wearer picks a
+The phone half of Cue's "answer for me" feature. When the wearer picks a
 reply on the glasses, this app:
 
 1. Speaks it out loud through the phone speaker, even with the phone locked.
@@ -62,9 +62,9 @@ $env:JAVA_HOME = "$env:USERPROFILE\.jdks\jdk-21.0.12.1+1"
 & "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" install -r app\build\outputs\apk\debug\app-debug.apk
 ```
 
-Then open **Earshot Companion** on the phone.
+Then open **Cue Companion** on the phone.
 
-Logs: `adb logcat -s Earshot` shows every message in and out.
+Logs: `adb logcat -s Cue` shows every message in and out.
 
 ## First run on the phone
 
@@ -111,10 +111,10 @@ Prefer buttons? Run `adb forward tcp:8765 tcp:8765`, then open
 The app's **Sound alerts** section has the same test with buttons, including one
 that rings 5 s later so you can lock the phone first.
 
-## Sound alerts from the glasses (Earshot server)
+## Sound alerts from the glasses (Cue server)
 
 The alerts come from the plugin, through `server/main.py`. On the phone:
-**Connection → Connect to a laptop (Earshot server or relay)**, URL
+**Connection → Connect to a laptop (Cue server or relay)**, URL
 `ws://SERVER_IP:8000/ws/pendant`, **Apply and restart bridge**, and allow
 **Local network**. The server console prints `pendant connected`, then an
 `ALERT` line for each sound. Spoken replies (`say` from the glasses) arrive on
@@ -170,4 +170,4 @@ Android rules this follows, checked October 2026:
 | Type page doesn't appear when locked | Checklist: "Full-screen page over lock screen" must be ✅. |
 | No sound alerts | Status must say "Bridge connected to relay" with the `/ws/pendant` URL; server console must show `pendant connected`. The sound must be Critical or Medium on the plugin page. |
 | Alert shows as a plain notification, not a call | "Full-screen page over lock screen" is ❌; the app falls back to a heads-up with Dismiss / Reply. |
-| Notification buttons not on lock screen | Pull down on the Earshot notification to expand it. Check lock-screen notification settings above. |
+| Notification buttons not on lock screen | Pull down on the Cue notification to expand it. Check lock-screen notification settings above. |

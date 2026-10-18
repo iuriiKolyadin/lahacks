@@ -1,10 +1,13 @@
-# Earshot
+# Cue
+
+(Formerly Earshot; code identifiers still use the old name.)
 
 Sound awareness for deaf and hard-of-hearing people, on Even Realities G2
 smart glasses. The glasses stay blank. When a sound you cannot hear matters,
 a doorbell, a knock, a siren, an alarm, one line appears in your line of
 sight saying what it was and which side it came from. Then the display goes
-blank again.
+blank again. When you need to answer, your phone rings like a call, shows the
+sound and the replies, and speaks the one you press.
 
 Built in 24 hours at LA Hacks AI Hackathon, UCLA, 17 to 18 October 2026, for
 the Beyond the Digital track and the Even Realities challenge.
@@ -13,7 +16,7 @@ the Beyond the Digital track and the Even Realities challenge.
 
 Even's G2 already captions speech with its built-in Conversate mode. Nothing
 on the glasses handles the sounds that are not speech, and a phone is too
-slow: by the time you look at it, the sound is over. Earshot covers
+slow: by the time you look at it, the sound is over. Cue covers
 everything Conversate ignores, with no external hardware. The G2 has no
 speaker, which costs a deaf user nothing.
 
@@ -37,9 +40,10 @@ drawn as "center" because the glasses cannot tell them apart.
 |---|---|---|
 | `plugin/` | the Even Hub app: streams glasses audio up, draws one line on the lenses | Wendy |
 | `server/` | the hub: YAMNet label map, thresholds, direction from the G2 tag, the state machine, mock mode | Nikhil, state machine spec by Dara |
-| `audio_classification/` | TensorFlow Lite audio example with `EarshotLink.swift`: runs YAMNet on a phone and returns scores to the hub | Nikhil |
+| `audio_classification/` | TensorFlow Lite audio example with `CueLink.swift`: runs YAMNet on a phone and returns scores to the hub | Nikhil |
+| `android-companion/` | Android app: rings like a call on urgent sounds, speaks replies, shows a type-here page over the lock screen | Iurii |
 | `tools/` | `eval.py` scores the pipeline on saved clips; `dirtest.py` analyses the direction tag | Dara |
-| `docs/` | research, eval results, direction findings | |
+| `docs/` | research, eval results, direction findings, `ARCHITECTURE.md` (the sound path end to end), `BRIDGE.md` (glasses-to-phone protocol), the pitch deck copy | |
 
 Read `PRD.md` for the full record: problem, design, measurements, every
 decision and why.
@@ -68,10 +72,14 @@ blocks phone-to-laptop traffic).
    npm run dev                                   # then, on the phone, scan:
    npx evenhub qr --url http://LAPTOP_IP:5173
    ```
-   To install as a Beta build: `npm run build && npx evenhub pack app.json dist -o earshot.ehpk`,
+   To install as a Beta build: `npm run build && npx evenhub pack app.json dist -o cue.ehpk`,
    upload at https://evenhub.evenrealities.com to a Beta group containing
    your Even account email, then on the phone: Me, Beta tester, install.
    The app needs the `g2-microphone` permission and nothing else; no keys.
+
+4. Companion, on an Android phone: see `android-companion/README.md` for the
+   build, then in the app choose Connection, enter `ws://LAPTOP_IP:8000/ws/pendant`,
+   Apply.
 
 Measure it: `python3 -m venv .venv && .venv/bin/pip install numpy ai-edge-litert && .venv/bin/python tools/eval.py --dual`.
 

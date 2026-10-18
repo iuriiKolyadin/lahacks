@@ -1,4 +1,6 @@
-# Earshot: product and build record
+# Cue: product and build record
+
+(Called Earshot until Sunday morning; code identifiers still say `earshot`.)
 
 Built at LA Hacks AI Hackathon, UCLA, 17 to 18 October 2026, for the Beyond
 the Digital track and the Even Realities challenge. Team: Dara Miao, Iurii
@@ -7,7 +9,8 @@ Kolyadin, Nikhil Marisetty, Wendy Wang.
 This is the one document: what we set out to build, what we built, what we
 measured, and what we decided along the way. Background research is in
 `docs/RESEARCH.md`; measurements are in `docs/eval-2026-10-17.md` and
-`docs/direction-test.md`.
+`docs/direction-test.md`; the sound path in detail is `docs/ARCHITECTURE.md`;
+the glasses-to-phone protocol is `docs/BRIDGE.md`.
 
 ## 1. The problem
 
@@ -18,7 +21,7 @@ look, the sound is over. Even's G2 glasses already caption speech with the
 built-in Conversate mode. Nothing on the glasses, and nothing in Even Hub's
 catalog of about 200 community apps, handles the sounds that are not speech.
 
-## 2. What Earshot does
+## 2. What Cue does
 
 The glasses stay blank. When a sound you cannot hear matters, one line
 appears in your line of sight saying what it was and which side it came
@@ -34,6 +37,13 @@ from, then the display goes blank again.
   and behind cannot be told apart and are drawn as "center".
 - The wearer picks an alert tier per sound on the phone page: critical,
   medium, or normal. Alarm and siren are locked to critical.
+- An Android companion app answers for the wearer. When the glasses flash a
+  critical or medium sound, the phone rings like an incoming call and shows
+  the sound, its direction, and one button per reply. A button speaks the
+  reply out loud through the phone speaker ("Sorry, could you repeat that
+  while facing me?"), and "please type" wakes the phone with an "I'm Deaf.
+  Please type here" page over the lock screen. The G2 has no speaker, so the
+  phone is the voice.
 - No captions, no transcription, no words shown, ever. Conversate does that.
 
 ## 3. Who it is for and why glasses
@@ -45,7 +55,7 @@ own brief for the hackathon asked for "a small, timely cue in the wearer's
 line of sight."
 
 Pitch, one breath: a deaf person misses the doorbell, the siren, and their
-own name. Conversate already captions what people say to you. Earshot covers
+own name. Conversate already captions what people say to you. Cue covers
 everything Conversate ignores, and shows nothing the rest of the time.
 
 ## 4. The demo
@@ -87,10 +97,17 @@ judge can do themselves.
   beats name beats cue beats speech beats idle, with hold times). Mock mode
   and WAV replay so it runs without glasses. Tests in `test_state.py`.
 - `audio_classification/` (Nikhil): the TensorFlow Lite audio classification
-  example, with `EarshotLink.swift` added so the iOS build takes audio from
+  example, with `CueLink.swift` added so the iOS build takes audio from
   the hub and returns YAMNet scores. Before the model: a 600 Hz high-pass
   and per-window gain, because the G2 stream is dominated by rumble under
   300 Hz and raw YAMNet hears "Music, Throbbing".
+- `android-companion/` (Iurii): the phone half of "answer for me". The
+  plugin sends an `alert` frame whenever the glasses are flashing a critical
+  or medium sound; the hub relays it to the companion on `/ws/pendant`. The
+  companion rings with a call-style notification, shows a full-screen page
+  over the lock screen with the sound, its direction, and the reply buttons,
+  speaks replies with on-device text to speech, and can show a type-here
+  page. Protocol in `docs/BRIDGE.md`.
 - `tools/` (Dara): `eval.py` scores the whole pipeline on saved clips;
   `dirtest.py` reads a server dump and shows what the direction tag did at
   each snap or knock.
@@ -102,6 +119,7 @@ plugin → hub   {"t":"audio","pcm":"<base64 int16 LE 16 kHz mono>","direction":
 hub → app      the same frame, unchanged
 app → hub      {"t":"result","ts":ms,"inference_ms":n,"top":[{"label":"Doorbell","score":0.82},...]}
 hub → plugin   {"state":"idle|cue|speech|name|alarm","label":"doorbell|knock|siren|alarm|horn|dog|clap|snap|speech","dir":"left|right|center|near","ttl_ms":n,"level":1..4}
+plugin → hub → companion   {"v":1,"type":"alert","id":"a...","active":true,"label":"siren","text":"Siren","dir":"right","tier":"critical","ts":ms}
 ```
 
 ## 6. What we measured
@@ -135,9 +153,9 @@ more often than not; the glasses cannot tell front from behind.
   sounds; we never call anyone.
 - Name detection. Planned as a Picovoice keyword spotter; first on the cut
   list and cut at the 11 pm checkpoint.
-- The outbound "I'm deaf, please face me" phrase from a pendant speaker.
-  Designed Saturday evening, the hub relays the message, but the phone-side
-  app was not built in time.
+- A phrase picker on the glasses themselves (swipe to choose, long-press to
+  speak). The replies live on the companion phone's alert page instead; the
+  glasses stay output-only.
 - External microphones or an ESP32 direction node. Not needed once the
   glasses' own direction tag turned out to carry data.
 - A camera. The G2 has none and the product does not need one.
@@ -159,6 +177,8 @@ more often than not; the glasses cannot tell front from behind.
 | Sun 07:55 | remove the second glasses app | an on-phone YAMNet scaffold at milestone 0; one app ships |
 | Sun 09:00 | keep the single filtered classifier path | the two-path fix for knocks was measured but changing the phone app before noon was not worth the risk |
 | Sun 09:15 | demo is siren, dog bark, clap | the sounds that detect every time through the glasses, and a clap is one the judge can make |
+| Sun 09:30 | Android companion lands: call-style alerts, spoken replies, type-here page | built overnight by Iurii; the "answer for me" half arrives through the phone rather than a glasses phrase picker |
+| Sun 09:40 | renamed Earshot to Cue | shorter, and it is what the glasses do: give you the cue |
 
 ## 9. Known limitations
 

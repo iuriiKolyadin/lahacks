@@ -1,4 +1,4 @@
-# Research: what Even Realities has, what the SDK gives us, prior art, and what Earshot adds
+# Research: what Even Realities has, what the SDK gives us, prior art, and what Cue adds
 
 Compiled Sat 2026-10-17 between 3 pm and 5 pm from the Even docs, the npm SDK
 package, the Even GitHub org, the community app list, Devpost, and the LA Hacks
@@ -196,9 +196,9 @@ face memory for dementia (Forget Me Not, Lumos, Dementia Assist, MemoLens),
 AR CPR guidance (Pulse at LA Hacks 2025, Proximity Pulse), captions
 (everything).
 
-## 4. What Earshot adds
+## 4. What Cue adds
 
-| Even already has | Earshot adds |
+| Even already has | Cue adds |
 |---|---|
 | Conversate: captions of speech | Nothing for speech. We show that speech happened and from where, never the words. |
 | A 4-mic array with a `direction` tag the SDK exposes but no app uses | The first app to use it, if the firmware fills it in; a two-mic fallback if not. |
