@@ -4,9 +4,10 @@
 <dict>
 	<key>NSAppTransportSecurity</key>
 	<dict>
+		<!-- Only this key: on iOS 10+ NSAllowsArbitraryLoads is ignored when
+		     NSAllowsLocalNetworking is also present, and then ws:// to a global
+		     IPv6 address (T-Mobile hotspot) is blocked. -->
 		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
