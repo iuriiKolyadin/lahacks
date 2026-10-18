@@ -209,12 +209,10 @@ Build, in this order:
    CORS; the whitelist does not get around it). `WebSocket /ws/glasses`
    receives section 3 frames, decodes `pcm` to int16 into a rolling buffer.
    Every 0.5 s: classifier, name spotter, state machine, send if changed.
-   `POST /direction` stores the latest value with a timestamp. `GET /` is a
-   status page. Also log the `direction` and `speakerRole` of every frame to
+   `GET /` is a status page. Also log the `direction` and `speakerRole` of every frame to
    the console; that is the Tier 0 test. `WebSocket /ws/pendant` accepts one
    connection from Iurii's app; any `say` frame that arrives on
-   `/ws/glasses` is forwarded to it unchanged. Drop `POST /direction`; the
-   ESP32 node is gone.
+   `/ws/glasses` is forwarded to it unchanged.
 2. `--mock` flag. Do this before anything else; it lets Wendy and Dara test
    against a real server later without your classifier being done.
 3. `classify.py`. `tf.lite.Interpreter` on `yamnet.tflite`. Run the last

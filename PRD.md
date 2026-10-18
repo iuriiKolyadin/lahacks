@@ -78,7 +78,7 @@ a stretch.
 | R4 | P0 | Runs as an Even Hub Beta build on a physical G2. | Installed from the Beta group on the phone the G2 is paired to; survives a 5-minute phone lock; double-tap exits via the system dialog. |
 | R5 | P1 | Name flash. The demo name, spoken from 2 m, shows YOUR NAME. | 4 of 5 tries; zero false flashes in 60 s of other speech. |
 | R6 | P1 | Speech cue. Someone other than the wearer talking shows `speech`; the wearer's own voice does not. | Wearer talks: nothing. Teammate talks: cue within 1 s. |
-| R7 | P1 | Direction. Every cue carries left, right, front, or behind. | Correct side 9 of 10 at 1 m. Source may be the G2's own direction tag or an external two-mic node; see PLAN.md. |
+| R7 | P1 | Direction. Every cue carries left, right, front, or behind. | Correct side 9 of 10 at 1 m. Source is the G2's own direction tag; if it carries no data, R7 is dropped. |
 | R8 | P2 | Companion phone page with an event log a judge can scroll. | Exists and matches what the glasses showed. |
 | R9 | P1 | Outbound phrase. Swipe on the temple picks one of three phrases, shown on the HUD. Long-press plays it from a speaker (an Android phone worn as a pendant). Phrases: "Hi, I'm deaf. Please face me and speak slowly." / "Could you repeat that?" / "Could you type it on your phone?" | A judge 1 m away hears the phrase within 1 s of the press, 5 of 5 tries. |
 
@@ -105,7 +105,7 @@ a stretch.
 | Risk | Likelihood | If it happens |
 |---|---|---|
 | The G2 audio stream is speech-filtered and drops doorbells or knocks | medium | Use the phone mic (one-line change). If still bad, laptop mic classifies, glasses display only. |
-| The G2 `direction` tag is null on current firmware | medium | External two-mic node if mic modules exist; otherwise ship without R7. |
+| The G2 `direction` tag is null on current firmware | medium | Ship without R7. The product is the same minus the arrow. |
 | Venue noise causes false cues | high | Higher thresholds, require two consecutive windows, demo with a speaker and clean clips. |
 | Phone can't reach the laptop | medium | Everything on one hotspot; whitelist the exact origin. |
 | Packaging or Beta flow rejects us at the last minute | low | Pack a throwaway build at integration tonight, not Sunday morning. |
@@ -115,7 +115,8 @@ a stretch.
 1. Demo name. A teammate's first name, two syllables.
 2. Does the G2 `direction` field carry real data on current firmware? Decided
    by the Tier 0 test, PLAN.md section 4.3.
-3. Does the MLH hardware table exist, and does it have microphone modules?
+3. Can the Even WebView on iOS play audio after one screen tap? If yes, Wendy
+   has a zero-hardware fallback for R9 if the pendant slips.
 
 ## 12. Decisions made
 
