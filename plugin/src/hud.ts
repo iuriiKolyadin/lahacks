@@ -82,7 +82,7 @@ const ARROW_UP = ['^', '|', '|']
 const ARROW_DOWN = ['|', '|', 'v']
 
 // Display text for a label; the server's ids are short.
-const SHOW: Partial<Record<NonNullable<HudState['label']>, string>> = { clap: 'clapping', snap: 'snap' }
+const SHOW: Partial<Record<NonNullable<HudState['label']>, string>> = { clap: 'clapping', snap: 'snap', dog: 'dog bark' }
 
 // The label as its tier draws it: critical is S P A C E D capitals between two
 // bars (the closest thing to a bigger font), medium is capitals, normal is as is.

@@ -124,6 +124,15 @@ def test_fires_on_a_window_where_the_label_is_missing():
     assert sm2.current(1.0)["label"] == "doorbell"
 
 
+def test_single_bark_fires_with_defaults():
+    sm = state.StateMachine()  # the real labels.py settings
+    sm.observe({"dog": 0.45}, now=0.0)  # one short bark, one window
+    assert sm.current(0.0)["label"] == "dog"
+    sm2 = state.StateMachine()
+    sm2.observe({"dog": 0.35}, now=0.0)  # below 0.4
+    assert sm2.current(0.0) == IDLE
+
+
 def test_defaults_ignore_noise_but_keep_alarms():
     sm = state.StateMachine()  # the real labels.py settings
     for t in (0.0, 0.5, 1.0):
