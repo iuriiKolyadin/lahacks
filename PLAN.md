@@ -78,7 +78,7 @@ Server to plugin, one JSON frame each time the state changes:
 ```
 - `state`: `idle`, `cue`, `speech`, `name`, or `alarm`
 - `label`: `doorbell`, `knock`, `siren`, `alarm`, `horn`, `dog`, `speech`, or `name`
-- `dir`: `left`, `right`, `front`, `behind`, or `near`. `near` means unknown, so no arrow.
+- `dir`: `left`, `right`, `front`, `behind`, `center`, or `near`. `center` means ahead or behind (the G2's two mics cannot tell which); `near` means unknown, so no arrow.
 - `ttl_ms`: show for this long, then go blank. `0` means show until the next frame.
 - `level`: brightness, 1 to 4
 
