@@ -25,10 +25,16 @@ SIGN = -1
 SIDE_DEG = 25
 # What a centered angle shows: "center" (ahead or behind), or "near" for no arrow.
 CENTER = "center"
-# How far back to look, and which frames count: the loudest LOUD_FRACTION of
-# them, since those carry the sound being cued rather than the room.
-WINDOW_S = 1.0
-LOUD_FRACTION = 0.5
+# How far back to look. The direction is read when the classifier result
+# arrives, which for a cue is 2-of-3 windows at 0.5 s hop plus the round trip:
+# 1 to 2 s after the sound. A 1 s window had already dropped a snap by then.
+WINDOW_S = 3.0
+# Which frames count: those at least PEAK_FRACTION as loud as the loudest frame
+# in the window. A snap or knock is 1 to 3 frames far louder than the room, so
+# only those frames vote; taking the loudest half let 20 room frames at -8/-17
+# outvote them and every transient read "center". An alarm or siren is loud for
+# many frames in a row, so the median still has plenty to average over.
+PEAK_FRACTION = 0.5
 
 
 def side_from_angle(deg: float | None) -> str:
@@ -60,9 +66,9 @@ class DirectionTracker:
         recent = [(rms, tag) for t, tag, rms in self.frames if now - t <= WINDOW_S]
         if not recent:
             return None
-        recent.sort(reverse=True)
-        loud = recent[: max(1, int(len(recent) * LOUD_FRACTION))]
-        return float(median(tag for _, tag in loud))
+        peak = max(rms for rms, _ in recent)
+        loud = [tag for rms, tag in recent if rms >= peak * PEAK_FRACTION]
+        return float(median(loud))
 
     def side(self, now: float | None = None) -> str:
         return side_from_angle(self.angle(now))

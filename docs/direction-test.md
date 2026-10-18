@@ -39,6 +39,18 @@ arrows both up and down, meaning "ahead or behind you".
 - near (no arrow) when the tag is missing: only on the phone mic or old
   firmware; the recording had none.
 
+## Fix, Sun 2026-10-18 early am: transients read "center"
+
+A snap by the right ear showed the double vertical arrow. Cause: the server
+reads the direction when the classifier result lands, which for a cue is
+2-of-3 windows at 0.5 s hop plus the round trip, so 1 to 2 s after the snap.
+The tracker only kept 1 s of frames and voted with the loudest half of them,
+so by then the snap's 1 to 3 frames were gone or outvoted by 20 room frames
+at -8/-17, which is "center". `server/direction.py` now keeps 3 s and votes
+only with frames at least half as loud as the loudest one in the window. An
+alarm is loud for many frames so its median is unchanged (test added in
+`server/test_state.py`).
+
 ## Still to do
 
 The four-position test from the plan: stand 1 m away, talk 5 s from left,

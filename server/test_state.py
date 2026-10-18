@@ -194,7 +194,21 @@ def test_direction_uses_loud_recent_frames():
     for i in range(10):  # the loud sound at -66 deg
         tr.add(-66, rms=500, now=0.6 + i * 0.03)
     assert tr.angle(now=0.9) == -66
-    assert tr.angle(now=5.0) is None  # all frames older than the window
+    assert tr.angle(now=9.0) is None  # all frames older than the window
+
+
+def test_direction_transient_beats_room_noise():
+    # A snap: 2 loud frames at +49 among 60 room frames at -17, and the
+    # classifier result lands 1.5 s later. The snap must still win.
+    import direction as D
+    tr = D.DirectionTracker()
+    for i in range(60):
+        tr.add(-17, rms=600, now=i * 0.05)
+    tr.add(49, rms=5000, now=1.0)
+    tr.add(49, rms=4200, now=1.05)
+    for i in range(30):
+        tr.add(-8, rms=600, now=1.1 + i * 0.05)
+    assert tr.angle(now=2.5) == 49
 
 
 if __name__ == "__main__":
