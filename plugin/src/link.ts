@@ -13,7 +13,7 @@ import type { AudioEvent } from '@evenrealities/even_hub_sdk'
 export type HudState = {
   state: 'idle' | 'cue' | 'speech' | 'name' | 'alarm'
   label?: 'doorbell' | 'knock' | 'siren' | 'alarm' | 'horn' | 'dog' | 'clap' | 'snap' | 'speech' | 'name'
-  dir?: 'left' | 'right' | 'front' | 'behind' | 'near'
+  dir?: 'left' | 'right' | 'front' | 'behind' | 'center' | 'near'
   ttl_ms?: number
   level?: number
 }

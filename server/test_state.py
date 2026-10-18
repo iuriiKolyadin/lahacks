@@ -172,7 +172,7 @@ def test_snap_and_clap_are_cues():
 def test_direction_sides_and_center():
     import direction as D
     assert D.side_from_angle(None) == "near"
-    assert D.side_from_angle(0) == D.CENTER
+    assert D.side_from_angle(0) == D.CENTER == "center"
     assert D.side_from_angle(D.SIDE_DEG * D.SIGN) == "right"
     assert D.side_from_angle(-D.SIDE_DEG * D.SIGN) == "left"
 

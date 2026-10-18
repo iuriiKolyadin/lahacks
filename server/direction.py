@@ -9,20 +9,22 @@ the same. So if the pair is left/right, front and behind both read near 0.
 
 Calibrate with the direction test (PLAN.md 4.3 step 6): the server's TIER0 log
 line and GET / show the live estimate. Set SIGN so that a sound on the
-wearer's left gives "left", and set CENTER to what a centered angle should
-show ("near" = no arrow, until a test shows front and behind can be told apart).
+wearer's left gives "left". Front and behind cannot be told apart, so a
+centered angle is "center", which the plugin draws as a double vertical arrow
+meaning "ahead or behind you".
 """
 
 import time
 from collections import deque
 from statistics import median
 
-# +1: positive angles are the wearer's right. Flip to -1 if the test says otherwise.
-SIGN = +1
+# -1: positive angles are the wearer's LEFT. Set from the first live test
+# (2026-10-17): with +1, a clap on the left showed the right arrow and vice versa.
+SIGN = -1
 # |angle| at or above this is a side; below it is CENTER.
 SIDE_DEG = 25
-# What a centered angle shows. "near" draws no arrow; "front" or "behind" if calibrated.
-CENTER = "near"
+# What a centered angle shows: "center" (ahead or behind), or "near" for no arrow.
+CENTER = "center"
 # How far back to look, and which frames count: the loudest LOUD_FRACTION of
 # them, since those carry the sound being cued rather than the room.
 WINDOW_S = 1.0

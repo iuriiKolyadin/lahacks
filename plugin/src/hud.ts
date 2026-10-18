@@ -68,7 +68,8 @@ function centerBlock(lines: string[]): string {
 
 // Arrow lines point where the sound came from: a horizontal line beside the
 // label for left and right, a vertical one above (front) or below (behind) it.
-// near has none. ASCII only: the firmware font's other glyphs are unverified.
+// center is ahead OR behind (the G2's two mics cannot tell which), drawn as
+// both. near has none. ASCII only: the firmware font's other glyphs are unverified.
 const ARROW_LEFT = '<-----'
 const ARROW_RIGHT = '----->'
 const ARROW_UP = ['^', '|']
@@ -83,6 +84,7 @@ function withDir(label: string, dir: HudState['dir']): string[] {
     case 'right': return [`${label}  ${ARROW_RIGHT}`]
     case 'front': return [...ARROW_UP, label]
     case 'behind': return [label, ...ARROW_DOWN]
+    case 'center': return [...ARROW_UP, label, ...ARROW_DOWN]
     default: return [label]
   }
 }
@@ -93,6 +95,7 @@ function dirOnly(dir: HudState['dir']): string[] {
     case 'right': return [ARROW_RIGHT]
     case 'front': return ARROW_UP
     case 'behind': return ARROW_DOWN
+    case 'center': return [...ARROW_UP, ...ARROW_DOWN]
     default: return []
   }
 }
@@ -246,6 +249,6 @@ export const DEMO_STATES: HudState[] = [
   { state: 'speech', label: 'speech', dir: 'left', ttl_ms: 0, level: 2 },
   { state: 'cue', label: 'knock', dir: 'front', ttl_ms: 0, level: 4 },
   { state: 'name', label: 'name', dir: 'left', ttl_ms: 0, level: 4 },
-  { state: 'cue', label: 'snap', dir: 'behind', ttl_ms: 0, level: 4 },
+  { state: 'cue', label: 'snap', dir: 'center', ttl_ms: 0, level: 4 },
   { state: 'alarm', label: 'siren', dir: 'behind', ttl_ms: 0, level: 4 },
 ]
