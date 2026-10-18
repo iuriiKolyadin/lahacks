@@ -252,3 +252,22 @@ under the kicker.
 - Direction cost no hardware; it cost reading 322 frames of an undocumented
   field and noticing it was one frame early.
 - Close: "Put the glasses on." Hand them over. That is the last slide.
+
+---
+
+## 02 Problem (replaces "What the wearer sees", Oct 18 09:30)
+
+One line per fact, source in mono under each. Built on the illustrated-eye image.
+
+| line | source |
+|---|---|
+| Captions capture words. Not the world around you. | headline |
+| 1.5 billion people live with hearing loss. 430 million need care. | WHO World Report on Hearing 2021, https://www.who.int/publications/i/item/9789240020481 |
+| 1 in 2 deaf and hard-of-hearing people miss an important sound daily. | Bragg, Huynh, Ladner, ASSETS 2016: 87 DHH (50 deaf, 37 HoH); ~50% miss sounds more than once per day |
+| At home: alarms, knocks, intruders. Outside: sirens, people coming from behind. | same paper; emergency alarms 90%+ at home; mobile list is sirens, bikes/people from behind |
+| Every glasses app for deaf users captions speech. Real-world sounds: 0. | XRAI Glass, TranscribeGlass, HearView, Even Conversate: all speech-to-text |
+| Even Hub, about 200 apps. Sound alerts in your line of sight: 0. | docs/RESEARCH.md, community catalog github.com/pangoleen/awesome-even-realities-g2 |
+| 3 in 4 deaf adults surveyed want visual sound alerts on glasses. | Findlater et al., CHI 2019, n=201: 75% want visual on head-mounted display + haptic on watch |
+| Our opportunity: important sounds as glanceable alerts, on the G2. | close |
+
+Caveat: the Bragg numbers are from a secondary summary of the paper, not the PDF. Check the PDF before quoting the 50% out loud.
