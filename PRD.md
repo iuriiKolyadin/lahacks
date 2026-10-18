@@ -1,4 +1,4 @@
-# Earshot — PRD
+# Earshot PRD
 
 Hackathon PRD. One page of what and why. How, who, and when are in `PLAN.md`.
 Background research is in `docs/RESEARCH.md`.
