@@ -1,12 +1,11 @@
 # server
 
 The laptop hub. It moves audio from the glasses to the iPhone classifier, turns
-the iPhone's YAMNet scores into HUD states, and relays `say` frames to the pendant.
+the iPhone's YAMNet scores into HUD states.
 
 ```
 plugin  --/ws/glasses-->  main.py  --/ws/classifier-->  iPhone (audio_classification/ios)
         <---- states ----          <---- results -----
-                                   --/ws/pendant----->  pendant
 ```
 
 ## Setup
@@ -38,7 +37,6 @@ our labels), and once a second the glasses' `direction` and `speakerRole`
 .venv/bin/python fake_classifier.py --model ../audio_classification/ios/AudioClassification/TFLite/yamnet.tflite
                                                     # real YAMNet on the laptop, same model as the app
 .venv/bin/python fake_glasses.py --wav clip.wav     # streams a 16 kHz mono WAV like the plugin
-.venv/bin/python fake_glasses.py --say repeat       # sends a say frame to the pendant
 ```
 
 ## Tuning

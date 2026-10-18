@@ -3,7 +3,6 @@ time, in the PLAN.md section 3 format, and prints every HUD state it gets back.
 
     python fake_glasses.py --wav clips/doorbell_1.wav
     python fake_glasses.py                      # silence, forever
-    python fake_glasses.py --say repeat         # also send one say frame
     python fake_glasses.py --seconds 20         # stop after 20 s
     python fake_glasses.py --role self          # mark audio as the wearer's own voice
     python fake_glasses.py --wav ../plugin/recordings/alarm_1.wav --jsonl ../plugin/recordings/alarm_1.jsonl
@@ -54,9 +53,6 @@ async def run(args):
                 print(f"{time.time() - t0:6.2f}s  STATE {msg}")
 
         read = asyncio.create_task(reader())
-        if args.say:
-            await ws.send(json.dumps({"t": "say", "phrase": args.say}))
-            print("sent say", args.say)
         meta, chunk = [], CHUNK
         if args.jsonl:
             meta = [json.loads(l) for l in open(args.jsonl) if l.strip()]
@@ -85,7 +81,6 @@ def main():
     ap.add_argument("--url", default="ws://localhost:8000/ws/glasses")
     ap.add_argument("--wav")
     ap.add_argument("--loop", action="store_true", help="repeat the WAV forever")
-    ap.add_argument("--say", choices=["deaf_intro", "repeat", "type_it"])
     ap.add_argument("--role", default="other", choices=["self", "other", "unknown"])
     ap.add_argument("--direction", type=int, default=None)
     ap.add_argument("--seconds", type=float, help="stop after this long")

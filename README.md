@@ -3,9 +3,7 @@
 Sound awareness for deaf and hard-of-hearing people, on Even Realities G2
 smart glasses. The glasses stay blank. When a sound you cannot hear matters,
 a doorbell, a knock, a siren, an alarm, or your own name, one line appears in
-your line of sight saying what it was and which way it came from. When you
-need to answer a hearing person, a long-press on the glasses makes a pendant
-speak for you.
+your line of sight saying what it was and which way it came from.
 
 Built at the LA Hacks AI Hackathon, 17 to 18 October 2026, for the Beyond the
 Digital track and the Even Realities challenge.
@@ -22,9 +20,8 @@ Digital track and the Even Realities challenge.
 | Folder | What | Owner |
 |---|---|---|
 | `plugin/` | the Even Hub app that runs on the phone and draws on the glasses | Wendy |
-| `server/` | Python hub: relays glasses audio to the iPhone classifier, turns its scores into HUD states, estimates direction, relays `say` to the pendant | Nikhil |
+| `server/` | Python hub: relays glasses audio to the iPhone classifier, turns its scores into HUD states, estimates direction | Nikhil |
 | `audio_classification/ios/` | iPhone app that runs YAMNet on the glasses audio and sends the scores back | Nikhil |
-| `pendant/` | Android app worn on a lanyard that speaks a phrase when the wearer long-presses | Iurii |
 | `tools/` | recording and evaluation scripts | Dara |
 | `docs/` | research and test results | everyone |
 
