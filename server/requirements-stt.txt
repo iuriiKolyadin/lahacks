@@ -1,0 +1,3 @@
+# only for main.py --stt whisper (captions on this computer); --stt deepgram needs nothing extra
+faster-whisper
+numpy

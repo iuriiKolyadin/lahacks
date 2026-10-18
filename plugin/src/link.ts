@@ -4,7 +4,8 @@
 //       {"t":"audio","pcm":<base64 int16 LE>,"direction":int|null,"speakerRole":"self"|"other"|"unknown","ts":ms}
 //       plus "alert" frames for the phone (alerts.ts), which the server relays to /ws/pendant
 // Down: one frame per HUD state change
-//       {"state","label","dir","ttl_ms","level"}
+//       {"state","label","dir","ttl_ms","level"}, plus "text" (captions) on a
+//       speech frame when the server runs with --stt
 //
 // Audio arriving while the socket is down is dropped, not queued: a stale
 // doorbell is worse than a missed one. Reconnects 1 s after any close.
@@ -17,6 +18,8 @@ export type HudState = {
   dir?: 'left' | 'right' | 'front' | 'behind' | 'center' | 'near'
   ttl_ms?: number
   level?: number
+  /** Speech only: what the person is saying, newest last (server/captions.py). */
+  text?: string
 }
 
 export type LinkStatus = 'connecting' | 'open' | 'closed'

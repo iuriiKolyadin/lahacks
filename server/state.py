@@ -91,6 +91,12 @@ class StateMachine:
             self.speech_last = now
             self.speech_dir = direction
 
+    def speech_heard(self, now: float, direction: str = "near") -> None:
+        """New caption words (captions.py) count as speech, even before YAMNet says so."""
+        if not self.alarm_active(now):
+            self.speech_last = now
+            self.speech_dir = direction
+
     def name_detected(self, now: float, direction: str = "near") -> None:
         if not self.alarm_active(now):
             self.name_until = now + NAME_TTL_S

@@ -12,6 +12,11 @@
 // The firmware font is proportional and its glyph widths are not published,
 // so centering is an estimate: CHAR_PX below, scaled by ?scale=, with the
 // line height from ?line=. Tune both on the real glasses with ?demo=1.
+//
+// Speech with captions (a `text` field) is drawn differently: a centered
+// "talking" line with its side arrow, then the words left-aligned and wrapped,
+// newest at the bottom. New words replace the text in place, without
+// restarting the tier's blinks.
 
 import {
   TextContainerProperty,
@@ -113,6 +118,47 @@ function withDir(block: string[], dir: HudState['dir']): string[] {
   }
 }
 
+// Greedy word wrap to the display width; a word wider than a line is cut.
+// The width is an estimate (charPx), so leave a margin.
+function wrap(text: string): string[] {
+  const max = (WIDTH - 2 * PADDING) * 0.92
+  const lines: string[] = []
+  let line = ''
+  for (let word of text.split(/\s+/).filter(Boolean)) {
+    while (textPx(word) > max) {
+      let cut = word.length
+      while (cut > 1 && textPx(word.slice(0, cut)) > max) cut--
+      if (line) lines.push(line)
+      lines.push(word.slice(0, cut))
+      line = ''
+      word = word.slice(cut)
+    }
+    const next = line ? `${line} ${word}` : word
+    if (textPx(next) > max && line) {
+      lines.push(line)
+      line = word
+    } else line = next
+  }
+  if (line) lines.push(line)
+  return lines
+}
+
+function captionLines(s: HudState): string[] {
+  const rows = Math.floor((HEIGHT - 2 * PADDING) / LINE_PX)
+  const head = s.dir === 'left' ? `${ARROW_LEFT}  talking` : s.dir === 'right' ? `talking  ${ARROW_RIGHT}` : 'talking'
+  return [head, ...wrap(s.text ?? '').slice(-Math.max(1, rows - 2))]
+}
+
+const hasCaptions = (s: HudState) => s.state === 'speech' && !!s.text
+
+// The container text for a state's lines: captions keep their head centered
+// and the words left-aligned from the top; everything else is centered.
+function layout(s: HudState, lines: string[]): string {
+  if (!lines.length) return ' '
+  if (hasCaptions(s)) return [centerLine(lines[0]), ...lines.slice(1)].join('\n')
+  return centerBlock(lines)
+}
+
 /** Which tier a state is drawn at. */
 export function tierFor(s: HudState): Tier {
   switch (s.state) {
@@ -129,7 +175,7 @@ export function linesFor(s: HudState): string[] {
   const tier = tierFor(s)
   switch (s.state) {
     case 'cue': return withDir(styled((s.label && SHOW[s.label]) ?? s.label ?? '', tier), s.dir)
-    case 'speech': return withDir(styled('speech', tier), s.dir)
+    case 'speech': return s.text ? captionLines(s) : withDir(styled('speech', tier), s.dir)
     case 'name': return withDir(styled('your name', tier === 'normal' ? 'medium' : tier), s.dir)
     case 'alarm': return withDir(styled(s.label === 'siren' ? 'siren' : 'alarm', tier, true), s.dir)
     default: return []
@@ -211,7 +257,7 @@ export function createHud(
     if (menuOpen) return // the menu owns the display; current is drawn when it closes
     const lines = linesFor(current)
     const tier = tierFor(current)
-    want = { content: lines.length ? centerBlock(lines) : ' ', level: LEVEL[tier] }
+    want = { content: layout(current, lines), level: LEVEL[tier] }
     if (lines.length) {
       const { ms, dim, times } = FLASH[tier]
       let toggles = 0
@@ -227,6 +273,16 @@ export function createHud(
       }, ms)
     }
     onShow(lines, tier, current)
+    schedule()
+  }
+
+  // Same speech, new words: swap the text and keep the blinks and timers running.
+  function retext(s: HudState) {
+    current = s
+    if (menuOpen) return
+    const lines = linesFor(current)
+    want = { ...want, content: layout(current, lines) }
+    onShow(lines, tierFor(current), current)
     schedule()
   }
 
@@ -247,6 +303,8 @@ export function createHud(
     if (!isOn(s.label)) s = { state: 'idle' } // the wearer switched this sound off
     if (speechHoldTimer !== null) clearTimeout(speechHoldTimer)
     speechHoldTimer = null
+    if (current.state === 'speech' && s.state === 'speech' && current.dir === s.dir
+      && hasCaptions(current) && hasCaptions(s)) return retext(s)
     // Speech stays up at least 1 s; only a drop to idle waits, anything else replaces it now.
     const shownFor = Date.now() - shownAt
     if (current.state === 'speech' && s.state === 'idle' && shownFor < SPEECH_MIN_MS) {
@@ -278,6 +336,8 @@ export const DEMO_STATES: HudState[] = [
   { state: 'idle' },
   { state: 'cue', label: 'doorbell', dir: 'right', ttl_ms: 0, level: 4 },
   { state: 'speech', label: 'speech', dir: 'left', ttl_ms: 0, level: 2 },
+  { state: 'speech', label: 'speech', dir: 'right', ttl_ms: 0, level: 2,
+    text: 'Hi, sorry to bother you. Is anyone sitting here, or can I take this seat? My friend is on the way.' },
   { state: 'cue', label: 'knock', dir: 'front', ttl_ms: 0, level: 4 },
   { state: 'name', label: 'name', dir: 'left', ttl_ms: 0, level: 4 },
   { state: 'cue', label: 'snap', dir: 'center', ttl_ms: 0, level: 4 },

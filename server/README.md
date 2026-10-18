@@ -30,6 +30,24 @@ change (`STATE`), every classifier window (`RESULT`, with the round trip and
 our labels), and once a second the glasses' `direction` and `speakerRole`
 (`TIER0`).
 
+## Captions
+
+With `--stt`, the speech state carries what the person is saying (`text` in
+the state frame), and the glasses show it under a `talking` line with the side
+arrow. Sounds still win: an alarm, your name or a cue replaces the captions
+while it is up. The wearer's own voice (`speakerRole` `self`) is not captioned.
+New words count as speech, so captions come up without waiting for YAMNet.
+
+```bash
+DEEPGRAM_API_KEY=... .venv/bin/python main.py --stt deepgram   # ~0.5 s behind, needs internet
+.venv/bin/pip install -r requirements-stt.txt                    # once, for whisper
+.venv/bin/python main.py --stt whisper                         # offline, ~1-2 s behind on a CPU
+.venv/bin/python main.py --stt whisper --whisper-model tiny.en # faster, less accurate
+```
+
+On Windows: `set DEEPGRAM_API_KEY=...` first, then `.venv\Scripts\python main.py --stt deepgram`.
+The first whisper run downloads the model (`base.en` is about 150 MB).
+
 ## Without the glasses or the iPhone
 
 ```bash

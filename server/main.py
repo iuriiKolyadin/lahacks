@@ -3,23 +3,17 @@
     python main.py              # real: needs the plugin and a classifier on /ws/classifier
     python main.py --classify   # real, and runs YAMNet on this computer: no iPhone needed
     python main.py --mock       # cycles every HUD state every 5 s, no classifier
+    python main.py --stt deepgram   # also caption other people's speech (captions.py)
 
 Sockets (all on port 8000):
-<<<<<<< Updated upstream
-  /ws/glasses     the plugin. Sends audio frames (PRD.md section 5),
-                  receives HUD state frames.
-  /ws/classifier  the iPhone YAMNet app. Receives every audio frame unchanged,
-                  sends back {"t":"result","ts":<newest audio ts>,"inference_ms":n,
-                  "top":[{"label":"Doorbell","score":0.82}, ...]}.
-=======
   /ws/glasses     the plugin. Sends audio and say frames (PLAN.md section 3)
-                  and alert frames (docs/BRIDGE.md), receives HUD state frames.
+                  and alert frames (docs/BRIDGE.md), receives HUD state frames;
+                  a speech frame carries "text" (the captions) when --stt is on.
   /ws/classifier  the iPhone YAMNet app, or fake_classifier.py --model on this
                   computer (what --classify starts). Receives every audio frame unchanged,
                   sends back {"t":"result","ts":<newest audio ts>,"inference_ms":n,
                   "top":[{"label":"Doorbell","score":0.82}, ...]}.
   /ws/pendant     the Android companion. Receives say and alert frames unchanged.
->>>>>>> Stashed changes
   GET /           status JSON.
 """
 
@@ -37,6 +31,7 @@ import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
+import captions
 import labels
 import direction
 from state import StateMachine
@@ -48,7 +43,8 @@ ALERT_FRESH_S = 10
 MOCK_STATES = [
     {"state": "idle"},
     {"state": "cue", "label": "doorbell", "dir": "right", "ttl_ms": 4000, "level": 4},
-    {"state": "speech", "label": "speech", "dir": "left", "ttl_ms": 0, "level": 2},
+    {"state": "speech", "label": "speech", "dir": "left", "ttl_ms": 0, "level": 2,
+     "text": "Hi, sorry to bother you. Is anyone sitting here, or can I take this seat?"},
     {"state": "name", "label": "name", "dir": "left", "ttl_ms": 4000, "level": 4},
     {"state": "alarm", "label": "siren", "dir": "near", "ttl_ms": 0, "level": 4},
 ]
@@ -104,11 +100,12 @@ class Peer:
 
 
 class Hub:
-    def __init__(self, mock: bool, dump=None):
+    def __init__(self, mock: bool, dump=None, stt: str | None = None, whisper_model: str = "base.en"):
         self.mock = mock
         self.dump = dump  # open file: one JSON line per audio frame, for tools/dirtest.py
         self.glasses: set[Peer] = set()
         self.classifiers: set[Peer] = set()
+        self.pendants: set[Peer] = set()
         self.sm = StateMachine()
         self.frame = {"state": "idle"}
         self.speaker_role = "unknown"
@@ -122,6 +119,7 @@ class Hub:
         self.recv_at: OrderedDict[int, float] = OrderedDict()
         # Tier 0 log: once a second, what direction/speakerRole the glasses sent
         self.tier0 = {"frames": 0, "dirs": set(), "roles": set(), "t0": time.time()}
+        self.captions = captions.create(stt, self.on_words, whisper_model) if stt and not mock else None
 
     def broadcast_state(self, frame: dict):
         self.frame = frame
@@ -148,6 +146,13 @@ class Hub:
                 self.recv_at.popitem(last=False)
         for p in self.classifiers:
             p.send(raw)
+        if self.captions and msg.get("pcm"):
+            import base64
+
+            try:
+                self.captions.feed(base64.b64decode(msg["pcm"]), self.speaker_role)
+            except ValueError:
+                pass
 
         t = self.tier0
         t["frames"] += 1
@@ -175,8 +180,6 @@ class Hub:
         mine = " ".join(f"{k}={v:.2f}" for k, v in scores.items())
         log(f"RESULT rtt={rtt} inf={msg.get('inference_ms', '?')}ms  {top3}  -> {mine or '-'}")
 
-<<<<<<< Updated upstream
-=======
     def on_say(self, raw: str):
         log("SAY", raw, f"-> {len(self.pendants)} pendant(s)")
         for p in self.pendants:
@@ -197,11 +200,18 @@ class Hub:
         if a and a["msg"].get("active") and time.time() - a["at"] < ALERT_FRESH_S:
             peer.send(a["raw"])
 
->>>>>>> Stashed changes
+    def on_words(self, now: float):
+        self.sm.speech_heard(now, self.dir_tracker.side(now))
+
     async def tick_loop(self):
         while True:
-            frame = self.sm.step(time.time())
-            if frame is not None:
+            now = time.time()
+            frame = self.sm.current(now)
+            if self.captions and frame["state"] == "speech":
+                text = self.captions.text(now)
+                if text:
+                    frame = {**frame, "text": text}
+            if frame != self.frame:
                 self.broadcast_state(frame)
             await asyncio.sleep(TICK_S)
 
@@ -214,9 +224,12 @@ class Hub:
 def make_app(hub: Hub) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app):
-        task = asyncio.create_task(hub.mock_loop() if hub.mock else hub.tick_loop())
+        tasks = [asyncio.create_task(hub.mock_loop() if hub.mock else hub.tick_loop())]
+        if hub.captions:
+            tasks.append(asyncio.create_task(hub.captions.run()))
         yield
-        task.cancel()
+        for task in tasks:
+            task.cancel()
 
     app = FastAPI(lifespan=lifespan)
     # The Even WebView enforces CORS; the manifest whitelist does not get around it.
@@ -228,6 +241,7 @@ def make_app(hub: Hub) -> FastAPI:
             "mode": "mock" if hub.mock else "live",
             "glasses": len(hub.glasses),
             "classifiers": len(hub.classifiers),
+            "pendants": len(hub.pendants),
             "audio_frames": hub.audio_frames,
             "results": hub.results,
             "state": hub.frame,
@@ -237,6 +251,7 @@ def make_app(hub: Hub) -> FastAPI:
             "direction_deg": hub.dir_tracker.angle(),
             "direction": hub.dir_tracker.side(),
             "alert": hub.alert["msg"] if hub.alert else None,
+            "stt": type(hub.captions).__name__.lower() if hub.captions else None,
         }
 
     async def serve(ws: WebSocket, pool: set, name: str, on_text):
@@ -271,13 +286,10 @@ def make_app(hub: Hub) -> FastAPI:
         t = msg.get("t")
         if t == "audio":
             hub.on_audio(raw, msg)
-<<<<<<< Updated upstream
-=======
         elif t == "say":
             hub.on_say(raw)
         elif msg.get("type") == "alert":
             hub.on_alert(raw, msg)
->>>>>>> Stashed changes
 
     def from_classifier(raw, msg):
         if msg.get("t") == "result" and not hub.mock:
@@ -290,6 +302,10 @@ def make_app(hub: Hub) -> FastAPI:
     @app.websocket("/ws/classifier")
     async def ws_classifier(ws: WebSocket):
         await serve(ws, hub.classifiers, "classifier", from_classifier)
+
+    @app.websocket("/ws/pendant")
+    async def ws_pendant(ws: WebSocket):
+        await serve(ws, hub.pendants, "pendant", lambda raw, msg: None)
 
     return app
 
@@ -376,8 +392,12 @@ def main():
     ap.add_argument("--host", help="listen on this address only (default: all IPv4 and IPv6)")
     ap.add_argument("--port", type=int, default=8000)
     ap.add_argument("--dump", help="append every audio frame's direction tag and rms to this .jsonl (read with tools/dirtest.py)")
+    ap.add_argument("--stt", choices=["deepgram", "whisper"],
+                    help="caption other people's speech: deepgram (DEEPGRAM_API_KEY) or whisper (requirements-stt.txt)")
+    ap.add_argument("--whisper-model", default="base.en", help="with --stt whisper: tiny.en is faster, small.en is better")
     args = ap.parse_args()
-    hub = Hub(mock=args.mock, dump=open(args.dump, "a", buffering=1) if args.dump else None)
+    hub = Hub(mock=args.mock, dump=open(args.dump, "a", buffering=1) if args.dump else None,
+              stt=args.stt, whisper_model=args.whisper_model)
     app = make_app(hub)
     opts = dict(log_level="warning", ws_max_size=4 * 1024 * 1024)
     if args.classify and not args.mock:
