@@ -77,11 +77,12 @@ Measure it: `python3 -m venv .venv && .venv/bin/pip install numpy ai-edge-litert
 
 ## Results
 
-22 test clips through the real pipeline: alarm 4/4, siren 3/3, dog 3/3,
-knock 3/3, horn 2/3, doorbell 4/6 with the two-path classifier, and zero
-false cues on 6 noise clips. About 1 s from sound to HUD state for alarms,
-sirens, knocks and horns. Direction correct 8 of 10 at 1 m. Details and
-caveats in `docs/eval-2026-10-17.md` and `docs/direction-test.md`.
+22 test clips through the shipped pipeline: alarm 4/4, siren 3/3, dog 3/3,
+and zero false cues on 6 noise clips. Knocks and most doorbells are lost to
+the high-pass filter that alarms need; a measured two-path fix gets 19 of 22
+but was not shipped. About 1 s from sound to HUD state for alarms and
+sirens. Direction correct 8 of 10 at 1 m. Details and caveats in
+`docs/eval-2026-10-17.md` and `docs/direction-test.md`.
 
 ## Team
 

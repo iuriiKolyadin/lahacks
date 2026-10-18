@@ -55,7 +55,7 @@ Judge wears the G2. HUD is blank. A teammate:
 | # | does | judge sees |
 |---|---|---|
 | 1 | plays a doorbell clip on the right | `doorbell  ----->` for 4 s, then blank |
-| 2 | knocks on the table on the left | `<-----  knock` for 4 s, then blank |
+| 2 | claps once on the left | `<-----  clapping` for 4 s, then blank |
 | 3 | plays a smoke alarm clip | full screen `ALARM` until it stops |
 | 4 | snaps fingers by the right ear | `snap  ----->` |
 | 5 | talks normally | `speech  <-----` while talking, fades after 3 s |
@@ -155,14 +155,16 @@ more often than not; the glasses cannot tell front from behind.
 | Sat 23:20 | direction window 1 s to 3 s, vote with peak-loud frames | snaps read "center" because room frames outvoted them |
 | Sat 23:40 | pair each frame's loudness with the previous frame's tag | 16 snaps showed the tag leads its audio by one frame; 4/10 became 8/10 |
 | Sun 07:55 | remove the second glasses app | an on-phone YAMNet scaffold at milestone 0; one app ships |
+| Sun 09:00 | keep the single filtered classifier path; demo with alarm, siren, dog, clap and snap | the two-path fix for knocks was measured but changing the phone app before noon was not worth the risk |
 
 ## 9. Known limitations
 
 - Front and behind are indistinguishable; the HUD shows "center" for both.
-- Knocks are filtered out by the 600 Hz high-pass that alarms need. The
-  measured fix is to run YAMNet on the raw window too and keep the higher
-  score per label (`tools/eval.py --dual`); it was not merged into the
-  classifier app before the deadline.
+- Knocks are not detected, and only 2 of 6 doorbells are. The 600 Hz
+  high-pass that alarms need through the G2 removes them. The measured fix,
+  running YAMNet on the raw window as well and keeping the higher score per
+  label (`tools/eval.py --dual`, 19 of 22 instead of 13), was a deliberate
+  non-change on Sunday morning: the demo uses the sounds that work.
 - The audio path has four hops (glasses, phone, laptop, phone, laptop,
   phone, glasses). The hub logs the round trip per window; end-to-end
   latency was not measured on video.
