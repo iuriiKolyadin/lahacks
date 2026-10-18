@@ -1,4 +1,4 @@
-# Research: Even Realities, the SDK, prior art, and what Earshot adds
+# Research: what Even Realities has, what the SDK gives us, prior art, and what Earshot adds
 
 Compiled Sat 2026-10-17 between 3 pm and 5 pm from the Even docs, the npm SDK
 package, the Even GitHub org, the community app list, Devpost, and the LA Hacks
@@ -87,14 +87,14 @@ English coach), and it won nothing.
 - Audio arrives in `bridge.onEvenHubEvent(e => e.audioEvent)` as
   `audioPcm: Uint8Array`, PCM 16 kHz, signed 16-bit little-endian, mono.
   Continuous frames; no documented voice-activity gating.
-- **`AudioEvent.direction: number | null`** — "Raw glasses direction tag for
+- `AudioEvent.direction: number | null`: "Raw glasses direction tag for
   this PCM frame, or null when unavailable." README: "a signed int16 ... the
   SDK does not convert its unit or range." Null on the phone mic and on older
   hosts. Added in 0.0.14. Nobody outside Even has documented its range, no
   community app uses it, and the Even FAQ still lists direction reporting as
   "on the roadmap." Whether current firmware fills it in is unknown until we
   test it.
-- **`AudioEvent.speakerRole: "self" | "other" | "unknown"`** — the app-side
+- `AudioEvent.speakerRole: "self" | "other" | "unknown"`: the app-side
   algorithm's guess whether the frame is the wearer speaking. Not a firmware
   identity assertion.
 - The SDK calls the stream "processed PCM" (the Chinese comment says 处理后,
