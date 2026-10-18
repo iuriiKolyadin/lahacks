@@ -8,7 +8,7 @@ Two modes:
     python fake_classifier.py --model ../audio_classification/ios/AudioClassification/TFLite/yamnet.tflite
         Real. Runs the same yamnet.tflite the iPhone app ships on the audio it
         receives, the same way the app does (last 15600 samples every 0.5 s).
-        Needs `pip install ai-edge-litert`. Use it with fake_glasses.py --wav to
+        Needs `pip install -r requirements-model.txt`. Use it with fake_glasses.py --wav to
         tune thresholds in labels.py without the phone.
 """
 

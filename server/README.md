@@ -13,8 +13,9 @@ plugin  --/ws/glasses-->  main.py  --/ws/classifier-->  iPhone (audio_classifica
 
 ```bash
 cd server
-~/.pyenv/versions/3.12.8/bin/python -m venv .venv
+python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
+.venv/bin/pip install -r requirements-model.txt   # optional, only for fake_classifier.py --model
 ```
 
 ## Run

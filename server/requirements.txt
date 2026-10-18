@@ -1,6 +1,3 @@
 fastapi
 uvicorn[standard]
 websockets
-# only for fake_classifier.py --model (real YAMNet on the laptop)
-numpy
-ai-edge-litert
