@@ -17,9 +17,11 @@ the glasses-to-phone protocol is `docs/BRIDGE.md`.
 Deaf and hard-of-hearing people miss the sounds that are not speech: a
 doorbell, a knock, a siren, a smoke alarm, their own name from across a room.
 Phone apps exist for some of this, but by the time you take the phone out and
-look, the sound is over. Even's G2 glasses already caption speech with the
-built-in Conversate mode. Nothing on the glasses, and nothing in Even Hub's
-catalog of about 200 community apps, handles the sounds that are not speech.
+look, the sound is over. Even's G2 glasses caption speech with the built-in
+Conversate mode, but a caption does not tell you a doorbell rang, and it does
+not tell you which side the voice came from. Nothing on the glasses, and
+nothing in Even Hub's catalog of about 200 community apps, handles the sounds
+that are not speech.
 
 ## 2. What Cue does
 
@@ -31,8 +33,13 @@ from, then the display goes blank again.
   snap for demos in a loud hall.
 - Alarms and sirens take the whole display at full brightness and suppress
   everything else until they stop.
-- Someone else talking shows a quiet "speech" cue with a side. The wearer's
-  own voice never triggers it; the SDK tells us which frames are the wearer.
+- Someone else talking shows their words, as live captions, under an arrow
+  for the side they are on. Captions are secondary: any sound cue, the name,
+  or an alarm replaces them while it is up, and they clear 8 s after the last
+  word. The wearer's own voice is never captioned; the SDK marks which frames
+  are the wearer and those are fed to the recognizer as silence. Speech to
+  text runs on the laptop (Deepgram over the network, or faster-whisper
+  offline), not in the glasses.
 - Direction comes from the glasses themselves. Left and right work. Front
   and behind cannot be told apart and are drawn as "center".
 - The wearer picks which sounds to see and an alert tier for each (off,
@@ -46,7 +53,8 @@ from, then the display goes blank again.
   while facing me?"), and "please type" wakes the phone with an "I'm Deaf.
   Please type here" page over the lock screen. The G2 has no speaker, so the
   phone is the voice.
-- No captions, no transcription, no words shown, ever. Conversate does that.
+- No note taking, no summaries, no translation. The words are shown and then
+  gone.
 
 ## 3. Who it is for and why glasses
 
@@ -57,8 +65,10 @@ own brief for the hackathon asked for "a small, timely cue in the wearer's
 line of sight."
 
 Pitch, one breath: a deaf person misses the doorbell, the siren, and their
-own name. Conversate already captions what people say to you. Cue covers
-everything Conversate ignores, and shows nothing the rest of the time.
+own name. Cue puts the sound and its direction in your line of sight the
+moment it happens, captions whoever is talking to you with an arrow to where
+they stand, lets you answer from your phone, and shows nothing the rest of
+the time.
 
 ## 4. The demo
 
@@ -69,11 +79,13 @@ Judge wears the G2. HUD is blank. A teammate:
 | 1 | plays a siren clip from a speaker on the right | full screen `SIREN` with `----->`, held while it plays, then blank |
 | 2 | plays a dog bark on the left | `<-----  dog bark` for 4 s, then blank |
 | 3 | claps once, standing on the right | `clapping  ----->` for 4 s, then blank |
-| 4 | hands the glasses to the next judge | nothing to set up |
+| 4 | stands on the left and talks to the judge | `<-----` and their words, updating as they speak; blank 8 s after they stop |
+| 5 | hands the glasses to the next judge | nothing to set up |
 
 Three sounds that detect reliably through the glasses: siren 3 of 3 and dog
 3 of 3 in the eval, and clap tuned live in the hall. The clap is the one a
-judge can do themselves.
+judge can do themselves. The captions step shows the arrow and the words
+together, which is the thing Conversate does not do.
 
 ## 5. How it works
 
@@ -96,8 +108,10 @@ judge can do themselves.
   glasses audio to the classifier app and classifier scores back through
   `labels.py` (YAMNet class map, per-label thresholds, k-of-n hit rules,
   cooldowns), `direction.py` (the G2 tag to a side), and `state.py` (alarm
-  beats name beats cue beats speech beats idle, with hold times). Mock mode
-  and WAV replay so it runs without glasses. Tests in `test_state.py`.
+  beats name beats cue beats speech beats idle, with hold times), and
+  `captions.py` (live speech to text of other people's voices, Deepgram or
+  faster-whisper, attached to the speech state as `text`). Mock mode and WAV
+  replay so it runs without glasses. Tests in `test_state.py`.
 - `audio_classification/` (Nikhil): the TensorFlow Lite audio classification
   example, with `EarshotLink.swift` added so the iOS build takes audio from
   the hub and returns YAMNet scores. Before the model: a 600 Hz high-pass
@@ -120,7 +134,7 @@ Message formats, so the pieces could be built on separate laptops:
 plugin → hub   {"t":"audio","pcm":"<base64 int16 LE 16 kHz mono>","direction":int|null,"speakerRole":"self|other|unknown","ts":ms}
 hub → app      the same frame, unchanged
 app → hub      {"t":"result","ts":ms,"inference_ms":n,"top":[{"label":"Doorbell","score":0.82},...]}
-hub → plugin   {"state":"idle|cue|speech|name|alarm","label":"doorbell|knock|siren|alarm|horn|dog|clap|snap|speech","dir":"left|right|center|near","ttl_ms":n,"level":1..4}
+hub → plugin   {"state":"idle|cue|speech|name|alarm","label":"doorbell|knock|siren|alarm|horn|dog|clap|snap|speech","dir":"left|right|center|near","ttl_ms":n,"level":1..4,"text":"<captions, speech state only>"}
 plugin → hub → companion   {"v":1,"type":"alert","id":"a...","active":true,"label":"siren","text":"Siren","dir":"right","tier":"critical","ts":ms}
 ```
 
@@ -149,8 +163,9 @@ more often than not; the glasses cannot tell front from behind.
 
 ## 7. What we deliberately did not build
 
-- Captions or transcription. Conversate exists, the SDK has no speech
-  recognition API, and Even's judges said caption apps will not stand out.
+- A captions-first app. Even's judges said caption apps will not stand out
+  and Conversate already exists, so captions here are the lowest priority
+  state: any sound replaces them, and the arrow is the point.
 - Anything medical or emergency-routing. Even Hub bans these. We display
   sounds; we never call anyone.
 - Name detection. Planned as a Picovoice keyword spotter; first on the cut
@@ -184,6 +199,8 @@ more often than not; the glasses cannot tell front from behind.
 | Sun 09:30 | Android companion lands: call-style alerts, spoken replies, type-here page | built overnight by Iurii; the "answer for me" half arrives through the phone rather than a glasses phrase picker |
 | Sun 09:40 | renamed Earshot to Cue | shorter, and it is what the glasses do: give you the cue |
 | Sun 09:25 | the on-glasses sound menu opens with a tap, not a long-press | a long-press on the touchpad opens Even AI before the plugin sees it |
+| Sun 10:00 | captions back in, as the lowest-priority state | with sounds, direction and phone replies working, captioning the person talking to you under an arrow to where they stand completes the product; Saturday's reason to cut them was time, and the time existed |
+| Sun 10:20 | the "speech" label is gone; speech shows only as words | a label next to captions was noise |
 
 ## 9. Known limitations
 
@@ -200,6 +217,8 @@ more often than not; the glasses cannot tell front from behind.
   through the G2's microphones.
 - The hub's address is baked into `plugin/app.json`; a new network means a
   new whitelist entry and a repack.
+- Captions need either internet (Deepgram) or a laptop CPU (faster-whisper,
+  one to two seconds behind). Without `--stt`, speech shows nothing at all.
 
 ## 10. Prior art
 

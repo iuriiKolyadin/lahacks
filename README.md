@@ -17,13 +17,16 @@ the Beyond the Digital track and the Even Realities challenge.
 Even's G2 already captions speech with its built-in Conversate mode. Nothing
 on the glasses handles the sounds that are not speech, and a phone is too
 slow: by the time you look at it, the sound is over. Cue covers
-everything Conversate ignores, with no external hardware. The G2 has no
+what Conversate ignores, and captions the person talking to you with an
+arrow to where they stand, with no external hardware. The G2 has no
 speaker, which costs a deaf user nothing.
 
 ## What it detects
 
-Doorbell, knock, siren, alarm, car horn, dog bark, clap, snap, and someone
-else speaking. Alarms and sirens take the whole display. Direction comes
+Doorbell, knock, siren, alarm, car horn, dog bark, clap, snap. When someone
+else speaks, their words appear as live captions under an arrow for the side
+they are on; the wearer's own voice is never captioned. Alarms and sirens
+take the whole display and replace captions while they last. Direction comes
 from the glasses' own microphone array: left and right, with front and behind
 drawn as "center" because the glasses cannot tell them apart.
 
@@ -63,7 +66,7 @@ blocks phone-to-laptop traffic).
 1. Hub, on a laptop:
    ```bash
    cd server && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-   .venv/bin/python main.py          # prints the addresses to point the other two at
+   .venv/bin/python main.py --stt whisper   # prints the addresses to point the other two at; --stt deepgram with DEEPGRAM_API_KEY for faster captions
    .venv/bin/python main.py --mock   # cycles every HUD state with no audio, for plugin work
    ```
 2. Classifier, on an iPhone: open
