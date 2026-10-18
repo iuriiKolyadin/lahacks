@@ -4,9 +4,10 @@
 // brightness via textColor, at least 150 ms between writes (only the latest
 // pending state is written; older ones are dropped, never queued).
 //
-// The G2 is monochrome green, so the wearer's alert tiers (settings.ts) are
-// drawn with brightness, flashing and case instead of colour. The server's
-// `level` field is ignored; the tier decides.
+// The G2 is monochrome green with one fixed font (no size control), so the
+// wearer's alert tiers (settings.ts) are drawn with spacing, a bar frame,
+// case, brightness and flashing. The server's `level` field is ignored; the
+// tier decides.
 //
 // The firmware font is proportional and its glyph widths are not published,
 // so centering is an estimate: CHAR_PX below, scaled by ?scale=, with the
@@ -27,9 +28,14 @@ const HEIGHT = 288
 const PADDING = 4
 const MIN_WRITE_GAP_MS = 150
 const SPEECH_MIN_MS = 1000
-const FLASH_MS = 300 // urgent: alternate bright and dim this often
-const LEVEL: Record<Tier, number> = { urgent: 4, important: 4, normal: 2 }
-const FLASH_DIM = 1
+const LEVEL: Record<Tier, number> = { critical: 4, medium: 4, normal: 2 }
+// How each tier flashes: toggle between LEVEL and `dim` every `ms`, `times`
+// toggles in all (Infinity = for as long as it is shown), then hold LEVEL.
+const FLASH: Record<Tier, { ms: number; dim: number; times: number }> = {
+  critical: { ms: 300, dim: 1, times: Infinity }, // fast and deep
+  medium: { ms: 700, dim: 2, times: Infinity }, // slower and shallower
+  normal: { ms: 500, dim: 1, times: 4 }, // two blinks on arrival, then steady
+}
 
 const params = new URLSearchParams(location.search)
 const SCALE = Number(params.get('scale') ?? 1)
@@ -78,25 +84,29 @@ const ARROW_DOWN = ['|', 'v']
 // Display text for a label; the server's ids are short.
 const SHOW: Partial<Record<NonNullable<HudState['label']>, string>> = { clap: 'clapping', snap: 'snap' }
 
-function withDir(label: string, dir: HudState['dir']): string[] {
-  switch (dir) {
-    case 'left': return [`${ARROW_LEFT}  ${label}`]
-    case 'right': return [`${label}  ${ARROW_RIGHT}`]
-    case 'front': return [...ARROW_UP, label]
-    case 'behind': return [label, ...ARROW_DOWN]
-    case 'center': return [...ARROW_UP, label, ...ARROW_DOWN]
-    default: return [label]
-  }
+// The label as its tier draws it: critical is S P A C E D capitals between two
+// bars (the closest thing to a bigger font), medium is capitals, normal is as is.
+function styled(text: string, tier: Tier): string[] {
+  if (tier === 'normal') return [text]
+  const caps = text.toUpperCase()
+  if (tier === 'medium') return [caps]
+  const spaced = caps.split('').join(' ')
+  const bar = '='.repeat(Math.max(3, Math.ceil(textPx(spaced) / textPx('='))))
+  return [bar, spaced, bar]
 }
 
-function dirOnly(dir: HudState['dir']): string[] {
+// Side arrows go on the label's own line (the middle line of a framed block);
+// the up arrow goes above the whole block and the down arrow below it.
+function withDir(block: string[], dir: HudState['dir']): string[] {
+  const mid = Math.floor(block.length / 2)
+  const side = (f: (s: string) => string) => block.map((l, i) => (i === mid ? f(l) : l))
   switch (dir) {
-    case 'left': return [ARROW_LEFT]
-    case 'right': return [ARROW_RIGHT]
-    case 'front': return ARROW_UP
-    case 'behind': return ARROW_DOWN
-    case 'center': return [...ARROW_UP, ...ARROW_DOWN]
-    default: return []
+    case 'left': return side(l => `${ARROW_LEFT}  ${l}`)
+    case 'right': return side(l => `${l}  ${ARROW_RIGHT}`)
+    case 'front': return [...ARROW_UP, ...block]
+    case 'behind': return [...block, ...ARROW_DOWN]
+    case 'center': return [...ARROW_UP, ...block, ...ARROW_DOWN]
+    default: return block
   }
 }
 
@@ -113,15 +123,12 @@ export function tierFor(s: HudState): Tier {
 
 /** The exact lines for a state, before centering. Empty array means blank. */
 export function linesFor(s: HudState): string[] {
-  const caps = (t: string) => (tierFor(s) === 'normal' ? t : t.toUpperCase())
+  const tier = tierFor(s)
   switch (s.state) {
-    case 'cue': return withDir(caps((s.label && SHOW[s.label]) ?? s.label ?? ''), s.dir)
-    case 'speech': return withDir(caps('speech'), s.dir)
-    case 'name': return withDir('YOUR NAME', s.dir)
-    case 'alarm': {
-      const head = s.label === 'siren' ? 'SIREN' : 'ALARM'
-      return [head, ...dirOnly(s.dir)]
-    }
+    case 'cue': return withDir(styled((s.label && SHOW[s.label]) ?? s.label ?? '', tier), s.dir)
+    case 'speech': return withDir(styled('speech', tier), s.dir)
+    case 'name': return withDir(styled('your name', tier === 'normal' ? 'medium' : tier), s.dir)
+    case 'alarm': return withDir(styled(s.label === 'siren' ? 'siren' : 'alarm', tier), s.dir)
     default: return []
   }
 }
@@ -162,7 +169,6 @@ export function createHud(
   let ttlTimer: number | null = null
   let speechHoldTimer: number | null = null
   let flashTimer: number | null = null
-  let flashBright = true
 
   function flush() {
     writeTimer = null
@@ -189,26 +195,27 @@ export function createHud(
     writeTimer = window.setTimeout(flush, wait)
   }
 
-  // Draw `current` at its tier. Called on every new state and whenever the wearer changes a tier.
+  // Draw `current` at its tier and (re)start that tier's flashing. Called on
+  // every new state and whenever the wearer changes a tier.
   function paint() {
     const lines = linesFor(current)
     const tier = tierFor(current)
-    const urgent = lines.length > 0 && tier === 'urgent'
-    if (!urgent && flashTimer !== null) {
-      clearInterval(flashTimer)
-      flashTimer = null
-    }
-    if (urgent && flashTimer === null) {
-      flashBright = true
+    if (flashTimer !== null) clearInterval(flashTimer)
+    flashTimer = null
+    want = { content: lines.length ? centerBlock(lines) : ' ', level: LEVEL[tier] }
+    if (lines.length) {
+      const { ms, dim, times } = FLASH[tier]
+      let toggles = 0
       flashTimer = window.setInterval(() => {
-        flashBright = !flashBright
-        want = { ...want, level: flashBright ? LEVEL.urgent : FLASH_DIM }
+        toggles++
+        const bright = toggles % 2 === 0
+        want = { ...want, level: bright ? LEVEL[tier] : dim }
         schedule()
-      }, FLASH_MS)
-    }
-    want = {
-      content: lines.length ? centerBlock(lines) : ' ',
-      level: urgent && !flashBright ? FLASH_DIM : LEVEL[tier],
+        if (toggles >= times && bright && flashTimer !== null) {
+          clearInterval(flashTimer) // finished its blinks on a bright frame
+          flashTimer = null
+        }
+      }, ms)
     }
     onShow(lines, tier)
     schedule()

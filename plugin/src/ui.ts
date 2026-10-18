@@ -2,10 +2,11 @@ import { LABELS, LOCKED, setTier, tierOf, onTiersChanged, type Tier } from './se
 
 type Status = 'connecting' | 'listening' | 'paused' | 'error'
 
-const TIER_NAMES: Record<Tier, string> = { urgent: 'Urgent', important: 'Important', normal: 'Normal' }
+const TIER_NAMES: Record<Tier, string> = { critical: 'Critical', medium: 'Medium', normal: 'Normal' }
 const LABEL_NAMES: Record<string, string> = {
   alarm: 'Smoke / fire alarm', siren: 'Siren', name: 'Your name', doorbell: 'Doorbell',
-  knock: 'Knock', horn: 'Car horn', dog: 'Dog bark', speech: 'Someone talking',
+  knock: 'Knock', horn: 'Car horn', dog: 'Dog bark', clap: 'Clapping', snap: 'Finger snap',
+  speech: 'Someone talking',
 }
 
 let statusEl: HTMLDivElement
@@ -28,7 +29,7 @@ export function mountUi() {
       </section>
       <section class="tiers">
         <div class="label">Alert levels</div>
-        <p class="hint">Urgent flashes on the glasses. Urgent and Important show in capitals; Normal is dimmer.</p>
+        <p class="hint">Critical shows spaced capitals in a frame and flashes fast. Medium shows capitals and flashes slowly. Normal is dimmer and blinks twice.</p>
         <div id="tier-rows"></div>
       </section>
       <footer>Double-tap the glasses temple to exit.</footer>
@@ -41,7 +42,7 @@ export function mountUi() {
   injectStyles()
 }
 
-// One row per sound with an Urgent / Important / Normal picker. alarm and siren are locked.
+// One row per sound with a Critical / Medium / Normal picker. alarm and siren are locked.
 function mountTiers(root: HTMLDivElement) {
   const draw = () => {
     root.innerHTML = LABELS.map(label => {
@@ -54,7 +55,7 @@ function mountTiers(root: HTMLDivElement) {
         })
         .join('')
       return `<div class="tier-row"><span class="tier-name tier-text-${tierOf(label)}">${LABEL_NAMES[label]}${
-        locked ? ' <small>(always urgent)</small>' : ''
+        locked ? ' <small>(always critical)</small>' : ''
       }</span><span class="tier-picker">${buttons}</span></div>`
     }).join('')
   }
@@ -112,8 +113,8 @@ function injectStyles() {
     .interim { color: #919191; font-size: 14px; }
     .label { font-size: 11px; color: #7B7B7B; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 8px; }
     footer { font-size: 12px; color: #7B7B7B; text-align: center; }
-    .tier-text-urgent { color: #FF453A; font-weight: 600; }
-    .tier-text-important { color: #FF9F0A; font-weight: 600; }
+    .tier-text-critical { color: #FF453A; font-weight: 600; }
+    .tier-text-medium { color: #FF9F0A; font-weight: 600; }
     .tier-text-normal { color: #E5E5E5; }
     .tiers { background: #2E2E2E; border: 1px solid #3E3E3E; border-radius: 12px; padding: 16px 20px; }
     .hint { font-size: 12px; color: #919191; margin: 4px 0 12px; }
@@ -126,8 +127,8 @@ function injectStyles() {
       border: 1px solid #3E3E3E; background: transparent; color: #A7A7A7; }
     .tier-btn:disabled { opacity: 0.4; }
     .tier-btn.on:disabled { opacity: 1; }
-    .tier-urgent.on { color: #FF453A; border-color: #FF453A; background: rgba(255,69,58,0.12); }
-    .tier-important.on { color: #FF9F0A; border-color: #FF9F0A; background: rgba(255,159,10,0.12); }
+    .tier-critical.on { color: #FF453A; border-color: #FF453A; background: rgba(255,69,58,0.12); }
+    .tier-medium.on { color: #FF9F0A; border-color: #FF9F0A; background: rgba(255,159,10,0.12); }
     .tier-normal.on { color: #E5E5E5; border-color: #7B7B7B; background: rgba(229,229,229,0.08); }
   `
   const style = document.createElement('style')

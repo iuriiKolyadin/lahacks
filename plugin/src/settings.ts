@@ -1,26 +1,26 @@
 // Per-sound alert tier, chosen by the wearer on the phone page and kept in localStorage.
 //
-//   urgent     brightest, flashing, UPPERCASE      (phone: red)
-//   important  brightest, steady, UPPERCASE        (phone: orange)
-//   normal     dimmer, steady, lowercase           (phone: default)
+//   critical   S P A C E D  capitals in a bar frame, fast deep flashing   (phone: red)
+//   medium     CAPITALS, slower shallow flashing                          (phone: orange)
+//   normal     lowercase, dimmer, two blinks on arrival then steady       (phone: default)
 //
-// alarm and siren are locked to urgent so a fire alarm can never be turned down.
+// alarm and siren are locked to critical so a fire alarm can never be turned down.
 
 import type { HudState } from './link'
 
-export type Tier = 'urgent' | 'important' | 'normal'
+export type Tier = 'critical' | 'medium' | 'normal'
 export type Label = NonNullable<HudState['label']>
 
 export const LABELS: Label[] = ['alarm', 'siren', 'name', 'doorbell', 'knock', 'horn', 'dog', 'clap', 'snap', 'speech']
 export const LOCKED: ReadonlySet<Label> = new Set(['alarm', 'siren'])
 
 const DEFAULTS: Record<Label, Tier> = {
-  alarm: 'urgent',
-  siren: 'urgent',
-  name: 'important',
-  doorbell: 'important',
-  knock: 'important',
-  horn: 'important',
+  alarm: 'critical',
+  siren: 'critical',
+  name: 'medium',
+  doorbell: 'medium',
+  knock: 'medium',
+  horn: 'medium',
   dog: 'normal',
   clap: 'normal',
   snap: 'normal',
@@ -28,14 +28,17 @@ const DEFAULTS: Record<Label, Tier> = {
 }
 
 const KEY = 'earshot.tiers.v1'
-const TIERS: Tier[] = ['urgent', 'important', 'normal']
+const TIERS: Tier[] = ['critical', 'medium', 'normal']
+// Names saved before the rename to critical/medium/normal.
+const OLD_NAMES: Record<string, Tier> = { urgent: 'critical', important: 'medium' }
 
 function load(): Record<Label, Tier> {
   const tiers = { ...DEFAULTS }
   try {
-    const saved = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<Record<Label, Tier>>
+    const saved = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<Record<Label, string>>
     for (const l of LABELS) {
-      const t = saved[l]
+      const raw = saved[l]
+      const t = (raw && (OLD_NAMES[raw] ?? raw)) as Tier | undefined
       if (t && TIERS.includes(t) && !LOCKED.has(l)) tiers[l] = t
     }
   } catch {
