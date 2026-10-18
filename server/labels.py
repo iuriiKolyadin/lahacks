@@ -47,7 +47,7 @@ THRESHOLD = {
     "siren": 0.3,
     "alarm": 0.3,
     "horn": 0.5,
-    "dog": 0.5,
+    "dog": 0.4,
     "clap": 0.5,
     "snap": 0.5,
     "speech": 0.6,
@@ -59,7 +59,12 @@ THRESHOLD = {
 # Alarm and siren use (2, 4): through the G2 mic a real alarm is detected on and
 # off, and with 2 of 3 ALARM came on late and blinked off once; with 2 of 4 it
 # held from 2.5 s to the end of alarm_1.wav.
-HITS = {label: (2, 3) for label in THRESHOLD} | {"siren": (2, 4), "alarm": (2, 4)}
+#
+# Dog uses (1, 1) at 0.4: a bark is short and usually scores in only one
+# window, so 2 of 3 dropped even clean barks that YAMNet scored 0.85. On four
+# ESC-50 barks mixed to G2 levels, (1, 1) at 0.4 caught 3 of 4; room noise
+# never scored dog above 0.06 tonight.
+HITS = {label: (2, 3) for label in THRESHOLD} | {"siren": (2, 4), "alarm": (2, 4), "dog": (1, 1)}
 
 # After a cue of a label starts, the same label cannot start a new cue for this
 # many seconds. Stops one long doorbell ring from re-flashing every window.

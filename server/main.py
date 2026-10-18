@@ -91,8 +91,9 @@ class Peer:
 
 
 class Hub:
-    def __init__(self, mock: bool):
+    def __init__(self, mock: bool, dump=None):
         self.mock = mock
+        self.dump = dump  # open file: one JSON line per audio frame, for tools/dirtest.py
         self.glasses: set[Peer] = set()
         self.classifiers: set[Peer] = set()
         self.pendants: set[Peer] = set()
@@ -123,7 +124,10 @@ class Hub:
         tag = msg.get("direction")
         if tag is not None:
             self.direction_tag = tag
-        self.dir_tracker.add(tag, frame_rms(msg.get("pcm", "")), now)
+        rms = frame_rms(msg.get("pcm", ""))
+        self.dir_tracker.add(tag, rms, now)
+        if self.dump:
+            self.dump.write(json.dumps({"t": round(now, 3), "direction": tag, "rms": round(rms), "role": self.speaker_role}) + "\n")
         ts = msg.get("ts")
         if ts is not None:
             self.recv_at[ts] = now
@@ -311,8 +315,9 @@ def main():
     ap.add_argument("--mock", action="store_true", help="cycle every HUD state every 5 s")
     ap.add_argument("--host", help="listen on this address only (default: all IPv4 and IPv6)")
     ap.add_argument("--port", type=int, default=8000)
+    ap.add_argument("--dump", help="append every audio frame's direction tag and rms to this .jsonl (read with tools/dirtest.py)")
     args = ap.parse_args()
-    hub = Hub(mock=args.mock)
+    hub = Hub(mock=args.mock, dump=open(args.dump, "a", buffering=1) if args.dump else None)
     app = make_app(hub)
     opts = dict(log_level="warning", ws_max_size=4 * 1024 * 1024)
     if args.host:

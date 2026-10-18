@@ -25,10 +25,22 @@ SIGN = -1
 SIDE_DEG = 25
 # What a centered angle shows: "center" (ahead or behind), or "near" for no arrow.
 CENTER = "center"
-# How far back to look, and which frames count: the loudest LOUD_FRACTION of
-# them, since those carry the sound being cued rather than the room.
-WINDOW_S = 1.0
-LOUD_FRACTION = 0.5
+# How far back to look. The direction is read when the classifier result
+# arrives, which for a cue is 2-of-3 windows at 0.5 s hop plus the round trip:
+# 1 to 2 s after the sound. A 1 s window had already dropped a snap by then.
+WINDOW_S = 3.0
+# Which frames count: those at least PEAK_FRACTION as loud as the loudest frame
+# in the window. A snap or knock is 1 to 3 frames far louder than the room, so
+# only those frames vote; taking the loudest half let 20 room frames at -8/-17
+# outvote them and every transient read "center". An alarm or siren is loud for
+# many frames in a row, so the median still has plenty to average over.
+PEAK_FRACTION = 0.5
+# The tag runs ahead of the audio it describes by this many frames. From 16
+# snaps at 1 m (docs/direction-test.md, Sun 2026-10-18): the tag ON the
+# loudest frame was -66 or worse from every side, but the tag one frame
+# BEFORE it was positive for all 5 left snaps and negative for 3 of 5 right
+# ones. The G2's speech enhancement probably delays the PCM, not the tag.
+TAG_LEAD_FRAMES = 1
 
 
 def side_from_angle(deg: float | None) -> str:
@@ -47,11 +59,16 @@ class DirectionTracker:
 
     def __init__(self):
         self.frames: deque[tuple[float, int, float]] = deque()  # (time, tag, rms)
+        self.pending: deque[int] = deque()  # tags not yet paired with their audio
 
     def add(self, tag: int | None, rms: float, now: float | None = None) -> None:
+        """Pair this frame's loudness with the tag from TAG_LEAD_FRAMES ago."""
         now = time.time() if now is None else now
         if tag is not None:
-            self.frames.append((now, tag, rms))
+            self.pending.append(tag)
+            while len(self.pending) > TAG_LEAD_FRAMES + 1:
+                self.pending.popleft()
+            self.frames.append((now, self.pending[0], rms))
         while self.frames and now - self.frames[0][0] > WINDOW_S:
             self.frames.popleft()
 
@@ -60,9 +77,9 @@ class DirectionTracker:
         recent = [(rms, tag) for t, tag, rms in self.frames if now - t <= WINDOW_S]
         if not recent:
             return None
-        recent.sort(reverse=True)
-        loud = recent[: max(1, int(len(recent) * LOUD_FRACTION))]
-        return float(median(tag for _, tag in loud))
+        peak = max(rms for rms, _ in recent)
+        loud = [tag for rms, tag in recent if rms >= peak * PEAK_FRACTION]
+        return float(median(loud))
 
     def side(self, now: float | None = None) -> str:
         return side_from_angle(self.angle(now))
