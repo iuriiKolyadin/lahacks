@@ -1,4 +1,12 @@
+import { LABELS, LOCKED, setTier, tierOf, onTiersChanged, type Tier } from './settings'
+
 type Status = 'connecting' | 'listening' | 'paused' | 'error'
+
+const TIER_NAMES: Record<Tier, string> = { urgent: 'Urgent', important: 'Important', normal: 'Normal' }
+const LABEL_NAMES: Record<string, string> = {
+  alarm: 'Smoke / fire alarm', siren: 'Siren', name: 'Your name', doorbell: 'Doorbell',
+  knock: 'Knock', horn: 'Car horn', dog: 'Dog bark', speech: 'Someone talking',
+}
 
 let statusEl: HTMLDivElement
 let hudEl: HTMLDivElement
@@ -18,13 +26,45 @@ export function mountUi() {
         <div class="label">Mic</div>
         <div id="mic" class="interim">waiting for audio…</div>
       </section>
+      <section class="tiers">
+        <div class="label">Alert levels</div>
+        <p class="hint">Urgent flashes on the glasses. Urgent and Important show in capitals; Normal is dimmer.</p>
+        <div id="tier-rows"></div>
+      </section>
       <footer>Double-tap the glasses temple to exit.</footer>
     </main>
   `
   statusEl = app.querySelector<HTMLDivElement>('#status')!
   hudEl = app.querySelector<HTMLDivElement>('#hud')!
   micEl = app.querySelector<HTMLDivElement>('#mic')!
+  mountTiers(app.querySelector<HTMLDivElement>('#tier-rows')!)
   injectStyles()
+}
+
+// One row per sound with an Urgent / Important / Normal picker. alarm and siren are locked.
+function mountTiers(root: HTMLDivElement) {
+  const draw = () => {
+    root.innerHTML = LABELS.map(label => {
+      const locked = LOCKED.has(label)
+      const buttons = (Object.keys(TIER_NAMES) as Tier[])
+        .map(t => {
+          const on = tierOf(label) === t
+          return `<button class="tier-btn tier-${t}${on ? ' on' : ''}" data-label="${label}" data-tier="${t}"
+            ${locked ? 'disabled' : ''} aria-pressed="${on}">${TIER_NAMES[t]}</button>`
+        })
+        .join('')
+      return `<div class="tier-row"><span class="tier-name tier-text-${tierOf(label)}">${LABEL_NAMES[label]}${
+        locked ? ' <small>(always urgent)</small>' : ''
+      }</span><span class="tier-picker">${buttons}</span></div>`
+    }).join('')
+  }
+  root.addEventListener('click', e => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-label]')
+    if (!btn || btn.disabled) return
+    setTier(btn.dataset.label as (typeof LABELS)[number], btn.dataset.tier as Tier)
+  })
+  onTiersChanged(draw)
+  draw()
 }
 
 export function setStatus(kind: Status, text: string) {
@@ -33,9 +73,11 @@ export function setStatus(kind: Status, text: string) {
   statusEl.textContent = text
 }
 
-/** Mirror of what the glasses show. */
-export function setHud(text: string) {
-  if (hudEl) hudEl.textContent = text
+/** Mirror of what the glasses show, coloured by tier (the glasses themselves are green only). */
+export function setHud(text: string, tier: Tier = 'normal') {
+  if (!hudEl) return
+  hudEl.textContent = text
+  hudEl.className = `tier-text-${tier}`
 }
 
 /** Once-a-second mic stats line. */
@@ -48,11 +90,11 @@ function injectStyles() {
   // ER OS green (#3CFA44) + signal red (#FF453A) for state chips.
   const css = `
     :root { color-scheme: dark; }
-    html, body { margin: 0; height: 100%; background: #232323; color: #E5E5E5;
+    html, body { margin: 0; min-height: 100%; background: #232323; color: #E5E5E5;
       font: 16px/1.4 -apple-system, BlinkMacSystemFont, 'Helvetica Neue', system-ui, sans-serif;
       touch-action: manipulation; -webkit-text-size-adjust: 100%;
       overscroll-behavior: none; }
-    #app { display: flex; height: 100%; }
+    #app { display: flex; }
     .panel { display: flex; flex-direction: column; gap: 16px;
       width: 100%; max-width: 640px; margin: 0 auto; padding: 24px; box-sizing: border-box; }
     header { display: flex; align-items: center; justify-content: space-between; }
@@ -63,13 +105,30 @@ function injectStyles() {
     .status-listening  { color: #3CFA44; border-color: #3CFA44; background: rgba(60,250,68,0.08); }
     .status-paused     { color: #E5E5E5; border-color: #7B7B7B; background: rgba(229,229,229,0.06); }
     .status-error      { color: #FF453A; border-color: #FF453A; background: rgba(255,69,58,0.08); }
-    .transcript { flex: 1; overflow: auto; background: #2E2E2E; border: 1px solid #3E3E3E;
+    .transcript { overflow: auto; background: #2E2E2E; border: 1px solid #3E3E3E;
       color: #E5E5E5;
       border-radius: 12px; padding: 20px; font-size: 18px; line-height: 1.5;
-      min-height: 180px; white-space: pre-wrap; word-break: break-word; }
+      min-height: 120px; white-space: pre-wrap; word-break: break-word; }
     .interim { color: #919191; font-size: 14px; }
     .label { font-size: 11px; color: #7B7B7B; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 8px; }
     footer { font-size: 12px; color: #7B7B7B; text-align: center; }
+    .tier-text-urgent { color: #FF453A; font-weight: 600; }
+    .tier-text-important { color: #FF9F0A; font-weight: 600; }
+    .tier-text-normal { color: #E5E5E5; }
+    .tiers { background: #2E2E2E; border: 1px solid #3E3E3E; border-radius: 12px; padding: 16px 20px; }
+    .hint { font-size: 12px; color: #919191; margin: 4px 0 12px; }
+    .tier-row { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 8px 0; border-top: 1px solid #3E3E3E; flex-wrap: wrap; }
+    .tier-name { font-size: 15px; }
+    .tier-name small { color: #7B7B7B; font-weight: 400; }
+    .tier-picker { display: flex; gap: 4px; }
+    .tier-btn { font: inherit; font-size: 12px; padding: 6px 10px; border-radius: 999px;
+      border: 1px solid #3E3E3E; background: transparent; color: #A7A7A7; }
+    .tier-btn:disabled { opacity: 0.4; }
+    .tier-btn.on:disabled { opacity: 1; }
+    .tier-urgent.on { color: #FF453A; border-color: #FF453A; background: rgba(255,69,58,0.12); }
+    .tier-important.on { color: #FF9F0A; border-color: #FF9F0A; background: rgba(255,159,10,0.12); }
+    .tier-normal.on { color: #E5E5E5; border-color: #7B7B7B; background: rgba(229,229,229,0.08); }
   `
   const style = document.createElement('style')
   style.textContent = css

@@ -1,74 +1,47 @@
 import {
   waitForEvenAppBridge,
-  TextContainerProperty,
   CreateStartUpPageContainer,
-  TextContainerUpgrade,
   OsEventTypeList,
   AudioInputSource,
 } from '@evenrealities/even_hub_sdk'
-import { startLink, serverUrl, type HudState } from './link'
+import { startLink, serverUrl, type Link } from './link'
+import { createHud, DEMO_STATES } from './hud'
 import { mountUi, setStatus, setHud, setMic } from './ui'
 
 mountUi()
 
 const bridge = await waitForEvenAppBridge()
 
-const hud = new TextContainerProperty({
-  xPosition: 0,
-  yPosition: 0,
-  width: 576,
-  height: 288,
-  borderWidth: 0,
-  borderColor: 5,
-  paddingLength: 4,
-  containerID: 1,
-  containerName: 'hud',
-  content: ' ',
-  isEventCapture: 1,
-})
+const hud = createHud(bridge, (lines, tier) => setHud(lines.length ? lines.join(' / ') : '(blank)', tier))
 
 const created = await bridge.createStartUpPageContainer(
-  new CreateStartUpPageContainer({ containerTotalNum: 1, textObject: [hud] }),
+  new CreateStartUpPageContainer({ containerTotalNum: 1, textObject: [hud.container] }),
 )
 if (created !== 0) {
   setStatus('error', `createStartUpPageContainer failed: ${created}`)
   console.error('Failed to create startup page')
 }
 
-// ── Glasses display ────────────────────────────────────────────────
-// Placeholder until src/hud.ts (PLAN 4.1 step 3) draws the exact strings.
+// ── Server link, or ?demo=1 ────────────────────────────────────────
 
-let lastRender = ''
-let renderTimer: number | null = null
-let currentContent = ' '
+const demo = new URLSearchParams(location.search).get('demo') === '1'
+let link: Link | null = null
+let demoTimer: number | null = null
 
-function scheduleGlassesRender() {
-  if (renderTimer !== null) return
-  renderTimer = window.setTimeout(async () => {
-    renderTimer = null
-    if (currentContent === lastRender) return
-    lastRender = currentContent
-    await bridge.textContainerUpgrade(
-      new TextContainerUpgrade({ containerID: 1, containerName: 'hud', content: currentContent }),
-    )
-  }, 150) // PLAN: at least 150 ms between writes
+if (demo) {
+  let i = 0
+  const step = () => hud.render(DEMO_STATES[i++ % DEMO_STATES.length])
+  step()
+  demoTimer = window.setInterval(step, 4000)
+  setStatus('listening', 'Demo mode · no server')
+} else {
+  const url = serverUrl()
+  link = startLink(url, hud.render, status => {
+    if (status === 'open') setStatus('listening', `Connected · ${url}`)
+    else if (status === 'connecting') setStatus('connecting', `Connecting · ${url}`)
+    else setStatus('error', `Disconnected, retrying · ${url}`)
+  })
 }
-
-function render(state: HudState) {
-  const text = state.state === 'idle' ? ' ' : [state.label, state.dir].filter(Boolean).join('  ')
-  currentContent = text
-  setHud(`${state.state}  ${text.trim()}`)
-  scheduleGlassesRender()
-}
-
-// ── Server link ────────────────────────────────────────────────────
-
-const url = serverUrl()
-const link = startLink(url, render, status => {
-  if (status === 'open') setStatus('listening', `Connected · ${url}`)
-  else if (status === 'connecting') setStatus('connecting', `Connecting · ${url}`)
-  else setStatus('error', `Disconnected, retrying · ${url}`)
-})
 
 // ── Mic, always on ─────────────────────────────────────────────────
 // No tap-to-pause: Earshot has to hear the doorbell without the wearer touching anything.
@@ -105,7 +78,8 @@ function cleanup() {
   if (cleanedUp) return
   cleanedUp = true
   bridge.audioControl(false)
-  link.close()
+  link?.close()
+  if (demoTimer !== null) clearInterval(demoTimer)
   clearInterval(statsTimer)
   unsubscribe()
 }
@@ -129,7 +103,7 @@ const unsubscribe = bridge.onEvenHubEvent(event => {
     countFrame(audio.audioPcm)
     lastDirection = audio.direction
     lastRole = audio.speakerRole
-    link.sendAudio(audio)
+    link?.sendAudio(audio)
   }
 
   const sysType = eventTypeOf(event.sysEvent)
