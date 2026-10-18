@@ -99,7 +99,7 @@ judge can do themselves.
   beats name beats cue beats speech beats idle, with hold times). Mock mode
   and WAV replay so it runs without glasses. Tests in `test_state.py`.
 - `audio_classification/` (Nikhil): the TensorFlow Lite audio classification
-  example, with `CueLink.swift` added so the iOS build takes audio from
+  example, with `EarshotLink.swift` added so the iOS build takes audio from
   the hub and returns YAMNet scores. Before the model: a 600 Hz high-pass
   and per-window gain, because the G2 stream is dominated by rumble under
   300 Hz and raw YAMNet hears "Music, Throbbing".

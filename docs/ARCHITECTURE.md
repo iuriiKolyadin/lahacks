@@ -163,7 +163,7 @@ queued. A stale doorbell is worse than a missed one.
 ### 2.5 Reconnects
 
 Every client reconnects 1 s after any close: the plugin (`plugin/src/link.ts`),
-the iPhone app (`CueLink.swift`), and the test tools. The hub sends the
+the iPhone app (`EarshotLink.swift`), and the test tools. The hub sends the
 current state to a glasses socket as soon as it connects, so a reconnect
 restores the HUD immediately. The iPhone app also reconnects when it comes
 back to the foreground, and keeps the screen awake because iOS kills sockets
@@ -207,7 +207,7 @@ The original app records from the phone's own mic. Ours has a second input
 source, glasses audio from the network
 (`audio_classification/ios/AudioClassification/TFLite/AudioClassificationHelper.swift`):
 
-1. `CueLink` receives each audio frame, base64-decodes it, converts int16
+1. `EarshotLink` receives each audio frame, base64-decodes it, converts int16
    to float (divide by 32,768).
 2. The samples go through the high-pass filter (section 4) and into a rolling
    buffer holding the newest 15,600 samples.

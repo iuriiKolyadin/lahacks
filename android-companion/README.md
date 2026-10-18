@@ -23,21 +23,22 @@ Targets Android 17 (API 37). Built and tested on a Pixel 10 Pro. Works on Androi
 
 ## One-time setup
 
-### Laptop (Windows)
+### Laptop
 
-You need a JDK 17+ and the Android SDK. Either install Android Studio (it
-brings both), or use what's already on this laptop:
+You need a JDK 17 or newer and the Android SDK. The simplest route on any OS
+is to install Android Studio, which brings both, open the `android-companion`
+folder, let it sync, and press Run with the phone plugged in. Everything
+below is the command-line equivalent.
 
-- JDK: `%USERPROFILE%\.jdks\jdk-21.0.12.1+1`
-- Android SDK: `%LOCALAPPDATA%\Android\Sdk`
-
-`local.properties` (not committed) points Gradle at the SDK. If it's
-missing, create `android-companion/local.properties` containing:
+`local.properties` (not committed) tells Gradle where the SDK is. If it is
+missing, create `android-companion/local.properties` with one line:
 ```
-sdk.dir=C\:\\Users\\YOU\\AppData\\Local\\Android\\Sdk
+sdk.dir=/path/to/Android/Sdk
 ```
+On Windows that is `sdk.dir=C\:\\Users\\YOU\\AppData\\Local\\Android\\Sdk`;
+on macOS, `sdk.dir=/Users/YOU/Library/Android/sdk`.
 
-Node.js 22+ is needed only for the test tools.
+Node.js 22 or newer is needed only for the test tools in `tools/`.
 
 ### Phone (Pixel)
 
@@ -53,18 +54,24 @@ Node.js 22+ is needed only for the test tools.
 
 ## Build and install
 
-In a VS Code terminal (PowerShell):
+With the phone plugged in and USB debugging allowed:
 
-```powershell
+```bash
 cd android-companion
-$env:JAVA_HOME = "$env:USERPROFILE\.jdks\jdk-21.0.12.1+1"
-.\gradlew.bat assembleDebug
-& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" install -r app\build\outputs\apk\debug\app-debug.apk
+./gradlew assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
+
+On Windows, in PowerShell, the same three steps are `.\gradlew.bat
+assembleDebug` and `adb.exe` from `%LOCALAPPDATA%\Android\Sdk\platform-tools`.
+If Gradle cannot find a JDK, set `JAVA_HOME` to one first (for example
+`$env:JAVA_HOME = "$env:USERPROFILE\.jdks\jdk-21.0.12.1+1"` on the laptop this
+was built on).
 
 Then open **Cue Companion** on the phone.
 
-Logs: `adb logcat -s Cue` shows every message in and out.
+Logs: `adb logcat -s Earshot` shows every message in and out (the log tag
+kept the app's original name).
 
 ## First run on the phone
 
