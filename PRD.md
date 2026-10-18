@@ -79,7 +79,7 @@ shows nothing the rest of the time."
  G2 mics ──BLE──▶ phone plugin ──ws──▶ laptop server (FastAPI)
    (PCM + direction tag)              - YAMNet class + name keyword spotter
                                       - direction: Tier 0 tag, or Tier B
- laptop mic + webcam mic ──USB──▶       two-mic time delay
+ P4-EYE mic ──USB serial──▶            P4-EYE vs G2 level difference
                                       - urgency state machine
                                       - one JSON state, pushed back over ws
                                                │
@@ -100,13 +100,23 @@ shows nothing the rest of the time."
     Test: log `audio.direction` while a teammate talks from left, right, front,
     behind. If the numbers move with position, map them to quadrants and ship.
     If always null, fall to Tier B.
-  - **Tier B, two mics on the laptop.** The laptop's built-in mic plus a USB
-    webcam mic (nearly every webcam has one), placed about 1 m apart on the
-    table, or one on each side of a cap. The server reads both as audio devices
-    and computes left/right from level difference plus time delay (GCC-PHAT).
-    Loses "behind"; the demo becomes left/right/near. Zero new hardware.
-    Verify tonight: plug a webcam in, open Audio MIDI Setup, confirm it appears
-    as an input.
+  - **Tier B, the ESP32-P4-EYE as a second mic on the wearer.** Clip the P4-EYE
+    to the left side of a cap; the G2 array is center-front. A sound from the
+    left is louder on the P4-EYE than on the glasses, and the reverse on the
+    right. The server compares short-window levels of the two streams for
+    left/right. Level difference only, not time delay: the two streams have
+    different, unknown latencies. Loses "behind"; the demo becomes
+    left/right/near.
+    Firmware: the P4-EYE factory demo already captures mic audio for MP4
+    recording. Reuse that capture path and write 16 kHz s16le PCM out the USB
+    port as a serial stream; the laptop reads it with pyserial. No Wi-Fi: the
+    C6 co-processor bring-up cost a community project a full day. Wi-Fi is a
+    stretch goal only.
+    Bonus: the P4-EYE audio is raw, with no voice isolation, so it doubles as
+    the classifier input if the G2 stream proves too speech-filtered.
+    Laptop-mic fallback: if the P4-EYE node slips past 9 pm, the laptop's own
+    mic plus a webcam mic on the table give the same left/right signal with
+    zero firmware. The product is unchanged.
   - **Tier C, no direction.** Product is sound class plus urgency only. Still a
     valid demo (doorbell, alarm, your name); loses the arrow. Only if 0 and B
     both fail.
@@ -160,18 +170,20 @@ else. No sound sensors, no jumper wires, no MLH kit.
 | Item | Role |
 |---|---|
 | Even G2 + iPhone | HUD, mic, touch, and (if Tier 0 works) direction |
-| laptop | server, YAMNet, Porcupine, Tier B mic |
-| USB camera(s) | webcam mic as the second mic for Tier B |
+| laptop | server, YAMNet, Porcupine |
+| ESP32-P4-EYE | second mic on the cap for Tier B, raw audio for the classifier fallback, Espressif prize |
+| USB camera(s) | webcam mic only for the laptop-mic fallback |
 | Arduino UNO Q | optional edge classifier node, needs a USB mic or webcam |
 | QNX Pi | optional, see §5 |
 | second phone | hotspot |
 
-Not used: P4-EYE, breadboard, brushless motors, arm parts.
+Not used: breadboard, brushless motors, arm parts, camera(s) unless a webcam
+mic is needed for the laptop fallback.
 
 ## 7a. Things we have to get (check off tonight)
 
 **Only if the MLH hardware table exists and has them (nice to have, not required)**
-- [ ] A USB microphone, any kind. Better than a webcam mic for Tier B.
+- [ ] A USB microphone, any kind. Only for the laptop fallback.
 - [ ] 4x sound sensor modules with analog out, plus jumper wires, if they exist.
       Would upgrade Tier B to four quadrants. Don't block on this.
 
@@ -212,6 +224,9 @@ Not used: P4-EYE, breadboard, brushless motors, arm parts.
       console, the `.ppn` file downloaded, and the access key in `.env`.
 - [ ] Gemini API key only if the long-press summary ships.
 - [ ] ffmpeg on the laptop (already installed on Dara's Mac).
+- [ ] ESP-IDF 5.5 installed on whoever owns the P4-EYE node, factory demo
+      rebuilt and flashed once, before writing any new firmware.
+- [ ] A USB-C data cable for the P4-EYE (not a charge-only cable).
 - [ ] Devpost project created, team members added, Even Realities and Beyond the
       Digital challenges selected.
 
@@ -221,7 +236,10 @@ Not used: P4-EYE, breadboard, brushless motors, arm parts.
   default, one timely cue. Not a teleprompter, translator, or note-taker.
 - **Beyond the Digital**: embedded sensors plus edge audio AI plus AR display.
 - **Applied Intelligence**: a real accessibility problem for a named user.
-- **QNX**: only with the optional node.
+- **Espressif**: P4-EYE as the wearable second mic and raw-audio classifier
+  input. Their prize wording is "creative, meaningful, impactful use", no hard
+  requirements.
+- **QNX**: only with the optional node, likely no.
 - **Gemini**: only with the long-press summary.
 - **ElevenLabs**: skip. The G2 has no speaker and bolting on a voice reply
   dilutes the product.
@@ -232,7 +250,7 @@ Not used: P4-EYE, breadboard, brushless motors, arm parts.
 |---|---|---|
 | Glasses | plugin: WebSocket, PCM up, state render, lifecycle, Beta packaging | state JSON from a mock server renders every §6 state on the real G2 |
 | Audio | server: YAMNet + Porcupine on PCM, class mapping, speakerRole gate | a recorded doorbell and a spoken name produce correct events in the log |
-| Direction | Tier 0 test on real glasses, then Tier B two-mic reader, then fusion | talking from left and right shows the right side in the server log |
+| Direction / ESP32 | Tier 0 test on real glasses, then P4-EYE firmware (mic to USB serial), serial reader, level fusion | talking from left and right shows the right side in the server log |
 | 4th (if any) | Devpost page, video, README, QNX node | submission draft exists by 10 pm |
 
 Every node has a mock so nobody waits: server `--mock` emits fake events; plugin
@@ -244,7 +262,8 @@ has a "demo" button cycling §6 states; direction reader has `--mock`.
 |---|---|
 | 5:30 pm | asr template on the real G2, log `audio.direction` from 4 positions, dump PCM to a WAV while playing doorbell/siren/knock. Decides Tier 0 and the classifier input. Visit Even table with any questions. |
 | 6:00 pm | Server emits mock state; plugin renders it on the G2 over the hotspot. |
-| 7:00 pm | Direction tier chosen and working on the bench. YAMNet classifies a doorbell clip from the chosen input. Decide QNX. |
+| 7:00 pm | Tier 0 verdict known. P4-EYE streams PCM over USB serial into the laptop (ESP-IDF 5.5 installed, factory demo rebuilt first). YAMNet classifies a doorbell clip. Decide QNX. |
+| 9:00 pm | P4-EYE node cutoff: if left/right from P4-EYE vs G2 isn't working, switch to laptop mic plus webcam and don't look back. |
 | 8:00 pm | Even table closes. Any SDK question must be asked before this. |
 | 9:00 pm | PCM from the glasses reaches the server; YAMNet runs on live audio. |
 | 11:00 pm | **Hard checkpoint: full demo loop works end to end once.** If not, cut the name spotter and ship sound cue + direction only. |
@@ -260,7 +279,8 @@ has a "demo" button cycling §6 states; direction reader has `--mock`.
 | Venue noise makes YAMNet flaky | 7 pm bench test in the hall | demo with phone-played clean clips at the table; raise thresholds |
 | G2 `direction` tag is always null on current firmware | 5:30 pm test | Tier B two-mic time delay on the laptop |
 | G2 stream strips non-speech sounds (voice isolation) | 5:30 pm WAV test | `AudioInputSource.Phone`, then laptop/webcam mic into YAMNet |
-| No webcam has a mic | 5:30 pm | laptop mic only; Tier C, no direction |
+| P4-EYE toolchain or mic capture fights us | 9 pm cutoff | laptop mic plus webcam mic on the table; Espressif prize dropped, product unchanged |
+| Level difference between P4-EYE and G2 is noisy (different gains, processing) | 7 pm bench | calibrate a per-stream gain on silence, require a 6 dB margin, else "near" with no arrow |
 | Mic stream dies on phone lock | 1 am test | re-enable `audioControl` and reconnect ws on foreground; persist state in localStorage |
 | Phone can't reach laptop | 6 pm | hotspot off a second phone; if still blocked, cloudflared tunnel with https whitelist |
 | Porcupine misses the name in venue noise | 9 pm | lower the sensitivity threshold, say the name twice in the demo, or cut it |
