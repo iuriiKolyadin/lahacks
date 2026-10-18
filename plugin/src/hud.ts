@@ -13,9 +13,10 @@
 // so centering is an estimate: CHAR_PX below, scaled by ?scale=, with the
 // line height from ?line=. Tune both on the real glasses with ?demo=1.
 //
-// Speech with captions (a `text` field) is drawn differently: a centered
-// "talking" line with its side arrow, then the words left-aligned and wrapped,
-// newest at the bottom. New words replace the text in place, without
+// Speech is drawn only as captions (a `text` field): the words left-aligned
+// and wrapped, newest at the bottom, under a centered side arrow when the
+// speaker is left or right. There is no "speech"/"talking" label, and speech
+// without words yet is blank. New words replace the text in place, without
 // restarting the tier's blinks.
 
 import {
@@ -143,19 +144,27 @@ function wrap(text: string): string[] {
   return lines
 }
 
+// The arrow line above captions; none when the side is unknown or ahead/behind.
+function captionHead(s: HudState): string | null {
+  return s.dir === 'left' ? ARROW_LEFT : s.dir === 'right' ? ARROW_RIGHT : null
+}
+
 function captionLines(s: HudState): string[] {
   const rows = Math.floor((HEIGHT - 2 * PADDING) / LINE_PX)
-  const head = s.dir === 'left' ? `${ARROW_LEFT}  talking` : s.dir === 'right' ? `talking  ${ARROW_RIGHT}` : 'talking'
-  return [head, ...wrap(s.text ?? '').slice(-Math.max(1, rows - 2))]
+  const head = captionHead(s)
+  const words = wrap(s.text ?? '').slice(-Math.max(1, rows - (head ? 2 : 1)))
+  return head ? [head, ...words] : words
 }
 
 const hasCaptions = (s: HudState) => s.state === 'speech' && !!s.text
 
-// The container text for a state's lines: captions keep their head centered
+// The container text for a state's lines: captions keep their arrow centered
 // and the words left-aligned from the top; everything else is centered.
 function layout(s: HudState, lines: string[]): string {
   if (!lines.length) return ' '
-  if (hasCaptions(s)) return [centerLine(lines[0]), ...lines.slice(1)].join('\n')
+  if (hasCaptions(s)) {
+    return captionHead(s) ? [centerLine(lines[0]), ...lines.slice(1)].join('\n') : lines.join('\n')
+  }
   return centerBlock(lines)
 }
 
@@ -175,7 +184,7 @@ export function linesFor(s: HudState): string[] {
   const tier = tierFor(s)
   switch (s.state) {
     case 'cue': return withDir(styled((s.label && SHOW[s.label]) ?? s.label ?? '', tier), s.dir)
-    case 'speech': return s.text ? captionLines(s) : withDir(styled('speech', tier), s.dir)
+    case 'speech': return s.text ? captionLines(s) : []
     case 'name': return withDir(styled('your name', tier === 'normal' ? 'medium' : tier), s.dir)
     case 'alarm': return withDir(styled(s.label === 'siren' ? 'siren' : 'alarm', tier, true), s.dir)
     default: return []
@@ -331,11 +340,10 @@ export function createHud(
   return { container, render, showMenu, hideMenu }
 }
 
-/** ?demo=1: cycles idle, cue, speech, name, alarm every 4 s with no server. */
+/** ?demo=1: cycles idle, cue, captions, name, alarm every 4 s with no server. */
 export const DEMO_STATES: HudState[] = [
   { state: 'idle' },
   { state: 'cue', label: 'doorbell', dir: 'right', ttl_ms: 0, level: 4 },
-  { state: 'speech', label: 'speech', dir: 'left', ttl_ms: 0, level: 2 },
   { state: 'speech', label: 'speech', dir: 'right', ttl_ms: 0, level: 2,
     text: 'Hi, sorry to bother you. Is anyone sitting here, or can I take this seat? My friend is on the way.' },
   { state: 'cue', label: 'knock', dir: 'front', ttl_ms: 0, level: 4 },
