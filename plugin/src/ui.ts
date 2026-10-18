@@ -13,7 +13,7 @@ export function mountUi() {
   app.innerHTML = `
     <main class="panel">
       <header>
-        <h1>Earshot</h1>
+        <h1>Cue</h1>
         <div id="status" class="status status-connecting">Connecting…</div>
       </header>
       <section class="transcript" aria-live="polite">
@@ -24,7 +24,7 @@ export function mountUi() {
       </section>
       <section class="tiers">
         <div class="label">Alert levels</div>
-        <p class="hint">Off sounds never show. Critical shows spaced capitals in a frame and flashes fast. Medium shows capitals and flashes slowly. Normal is dimmer and blinks twice. Critical and Medium also ring the Earshot Companion phone like a call. On the glasses: long-press for the same menu.</p>
+        <p class="hint">Off sounds never show. Critical shows spaced capitals in a frame and flashes fast. Medium shows capitals and flashes slowly. Normal is dimmer and blinks twice. Critical and Medium also ring the Cue Companion phone like a call. On the glasses: tap for the same menu.</p>
         <div id="tier-rows"></div>
       </section>
       <footer>Double-tap the glasses temple to exit.</footer>

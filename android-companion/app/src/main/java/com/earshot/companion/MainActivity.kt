@@ -111,7 +111,7 @@ class MainActivity : Activity() {
             setPadding(dp(16), dp(8), dp(16), dp(24))
         }
         col.addView(TextView(this).apply {
-            text = "Earshot Companion"
+            text = "Cue Companion"
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f)
             typeface = Typeface.DEFAULT_BOLD
         })
@@ -187,13 +187,13 @@ class MainActivity : Activity() {
         header(col, "Connection")
         val modeGroup = RadioGroup(this)
         val rServer = RadioButton(this).apply { id = View.generateViewId(); text = "Phone hosts the bridge (glasses app connects to the phone)" }
-        val rRelay = RadioButton(this).apply { id = View.generateViewId(); text = "Connect to a laptop (Earshot server or relay)" }
+        val rRelay = RadioButton(this).apply { id = View.generateViewId(); text = "Connect to a laptop (Cue server or relay)" }
         modeGroup.addView(rServer); modeGroup.addView(rRelay)
         modeGroup.check(if (prefs.mode == Prefs.MODE_RELAY) rRelay.id else rServer.id)
         col.addView(modeGroup)
         val host = field(col, "Listen address (127.0.0.1 = this phone only, 0.0.0.0 = whole Wi-Fi)", prefs.bindHost)
         val port = field(col, "Port", prefs.port.toString(), InputType.TYPE_CLASS_NUMBER)
-        val relay = field(col, "Laptop URL: ws://LAPTOP_IP:8000/ws/pendant for the Earshot server (sound alerts), " +
+        val relay = field(col, "Laptop URL: ws://LAPTOP_IP:8000/ws/pendant for the Cue server (sound alerts), " +
             "ws://LAPTOP_IP:8787/phone for relay.mjs", prefs.relayUrl, InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI)
         button(col, "Apply and restart bridge") {
             prefs.mode = if (modeGroup.checkedRadioButtonId == rRelay.id) Prefs.MODE_RELAY else Prefs.MODE_SERVER
