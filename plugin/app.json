@@ -1,13 +1,18 @@
 {
-  "package_id": "com.example.evenhubasr",
+  "package_id": "com.earshot.lahacks",
   "edition": "202601",
-  "name": "Even Hub ASR",
+  "name": "Earshot",
   "version": "0.1.0",
-  "min_app_version": "2.0.0",
-  "min_sdk_version": "0.0.10",
+  "min_app_version": "2.2.10",
+  "min_sdk_version": "0.0.16",
   "entrypoint": "index.html",
   "permissions": [
-    { "name": "g2-microphone", "desc": "Capture audio from the glasses mic for live transcription." }
+    { "name": "g2-microphone", "desc": "Listens for doorbells, alarms and other sounds around you." },
+    {
+      "name": "network",
+      "desc": "Streams mic audio to the Earshot server.",
+      "whitelist": ["http://172.20.10.3:8000", "ws://172.20.10.3:8000"]
+    }
   ],
   "supported_languages": ["en"]
 }

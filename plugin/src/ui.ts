@@ -1,26 +1,29 @@
 type Status = 'connecting' | 'listening' | 'paused' | 'error'
 
 let statusEl: HTMLDivElement
-let finalEl: HTMLSpanElement
-let interimEl: HTMLSpanElement
+let hudEl: HTMLDivElement
+let micEl: HTMLDivElement
 
 export function mountUi() {
   const app = document.querySelector<HTMLDivElement>('#app')!
   app.innerHTML = `
     <main class="panel">
       <header>
-        <h1>ASR Demo</h1>
+        <h1>Earshot</h1>
         <div id="status" class="status status-connecting">Connecting…</div>
       </header>
       <section class="transcript" aria-live="polite">
-        <span id="final"></span><span id="interim" class="interim"></span>
+        <div class="label">HUD</div>
+        <div id="hud">idle</div>
+        <div class="label">Mic</div>
+        <div id="mic" class="interim">waiting for audio…</div>
       </section>
-      <footer>Tap the glasses temple to pause · double-tap to exit.</footer>
+      <footer>Double-tap the glasses temple to exit.</footer>
     </main>
   `
   statusEl = app.querySelector<HTMLDivElement>('#status')!
-  finalEl = app.querySelector<HTMLSpanElement>('#final')!
-  interimEl = app.querySelector<HTMLSpanElement>('#interim')!
+  hudEl = app.querySelector<HTMLDivElement>('#hud')!
+  micEl = app.querySelector<HTMLDivElement>('#mic')!
   injectStyles()
 }
 
@@ -30,10 +33,14 @@ export function setStatus(kind: Status, text: string) {
   statusEl.textContent = text
 }
 
-export function setTranscript(finalText: string, interimText: string) {
-  if (!finalEl) return
-  finalEl.textContent = finalText
-  interimEl.textContent = interimText
+/** Mirror of what the glasses show. */
+export function setHud(text: string) {
+  if (hudEl) hudEl.textContent = text
+}
+
+/** Once-a-second mic stats line. */
+export function setMic(text: string) {
+  if (micEl) micEl.textContent = text
 }
 
 function injectStyles() {
@@ -60,7 +67,8 @@ function injectStyles() {
       color: #E5E5E5;
       border-radius: 12px; padding: 20px; font-size: 18px; line-height: 1.5;
       min-height: 180px; white-space: pre-wrap; word-break: break-word; }
-    .interim { color: #919191; }
+    .interim { color: #919191; font-size: 14px; }
+    .label { font-size: 11px; color: #7B7B7B; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 8px; }
     footer { font-size: 12px; color: #7B7B7B; text-align: center; }
   `
   const style = document.createElement('style')
