@@ -1,132 +1,182 @@
-# Earshot PRD
+# Earshot: product and build record
 
-Hackathon PRD. One page of what and why. How, who, and when are in `PLAN.md`.
-Background research is in `docs/RESEARCH.md`.
+Built at LA Hacks AI Hackathon, UCLA, 17 to 18 October 2026, for the Beyond
+the Digital track and the Even Realities challenge. Team: Dara Miao, Iurii
+Kolyadin, Nikhil Marisetty, Wendy Wang.
 
-LA Hacks AI Hackathon 2026, track Beyond the Digital. Team: Dara, Iurii, Nikhil,
-Wendy. Deadline Sunday 2026-10-18, 12:00 pm.
+This is the one document: what we set out to build, what we built, what we
+measured, and what we decided along the way. Background research is in
+`docs/RESEARCH.md`; measurements are in `docs/eval-2026-10-17.md` and
+`docs/direction-test.md`.
 
-## 1. Problem
+## 1. The problem
 
-Deaf and hard-of-hearing people miss sounds that aren't speech: a doorbell, a
-knock, a siren, a smoke alarm, their own name called from across a room. Phone
-apps exist for some of this, but by the time you take out a phone and look, the
-sound is over and the information is useless. Even's G2 glasses already caption
-speech with the built-in Conversate mode. Nothing on the glasses, or on Even's
-app store, handles the sounds that aren't speech.
+Deaf and hard-of-hearing people miss the sounds that are not speech: a
+doorbell, a knock, a siren, a smoke alarm, their own name from across a room.
+Phone apps exist for some of this, but by the time you take the phone out and
+look, the sound is over. Even's G2 glasses already caption speech with the
+built-in Conversate mode. Nothing on the glasses, and nothing in Even Hub's
+catalog of about 200 community apps, handles the sounds that are not speech.
 
-## 2. Users
+## 2. What Earshot does
 
-A deaf or hard-of-hearing adult who already wears Even G2 glasses through the
-day, at home, at work, walking. They need to know a sound happened, what it
-was, and roughly where, without stopping what they're doing.
+The glasses stay blank. When a sound you cannot hear matters, one line
+appears in your line of sight saying what it was and which side it came
+from, then the display goes blank again.
 
-## 3. Why glasses
+- Sounds: doorbell, knock, siren, alarm, car horn, dog bark, plus clap and
+  snap for demos in a loud hall.
+- Alarms and sirens take the whole display at full brightness and suppress
+  everything else until they stop.
+- Someone else talking shows a quiet "speech" cue with a side. The wearer's
+  own voice never triggers it; the SDK tells us which frames are the wearer.
+- Direction comes from the glasses themselves. Left and right work. Front
+  and behind cannot be told apart and are drawn as "center".
+- The wearer picks an alert tier per sound on the phone page: critical,
+  medium, or normal. Alarm and siren are locked to critical.
+- No captions, no transcription, no words shown, ever. Conversate does that.
 
-The cue has to arrive the instant the sound does, in their line of sight, with
-their hands free. The G2 has no speaker, which costs a deaf user nothing. Even's
-own brief for this hackathon asks for "a small, timely cue in the wearer's line
-of sight."
+## 3. Who it is for and why glasses
 
-## 4. Goals
+A deaf or hard-of-hearing adult who already wears the G2 through the day.
+The cue has to arrive the instant the sound does, in their line of sight,
+hands free. The G2 has no speaker, which costs a deaf user nothing. Even's
+own brief for the hackathon asked for "a small, timely cue in the wearer's
+line of sight."
 
-1. The wearer learns about a doorbell, knock, siren, alarm, car horn, dog bark,
-   or their own name within one second of it happening.
-2. The display is blank the rest of the time.
-3. A judge can put the glasses on and experience it in 60 seconds with nothing
-   to configure.
-4. Win the Even Realities challenge and place in Beyond the Digital.
+Pitch, one breath: a deaf person misses the doorbell, the siren, and their
+own name. Conversate already captions what people say to you. Earshot covers
+everything Conversate ignores, and shows nothing the rest of the time.
 
-## 5. Non-goals
-
-- Captions or transcription of any kind. Conversate does it; we never show words.
-- Translation, note-taking, summaries.
-- Anything medical or emergency-routing. Even Hub bans these and it would
-  disqualify us from the Even prize. We display sounds; we never call anyone.
-- Fine-grained direction. Left, right, front, behind is enough.
-- Any camera.
-
-## 6. The demo (this is the acceptance test for the whole product)
+## 4. The demo
 
 Judge wears the G2. HUD is blank. A teammate:
 
-| # | Does | Judge sees | Must pass by |
-|---|---|---|---|
-| 1 | Says "hey, [demo name]" from the left | `YOUR NAME` flash, `<-` if we have direction | 11 pm Sat |
-| 2 | Plays a doorbell clip on the right | `doorbell  ->` for 4 s, then blank | 11 pm Sat |
-| 3 | Knocks on the table behind | `knock` for 4 s, then blank | 11 pm Sat |
-| 4 | Plays a smoke-alarm clip | Full screen `ALARM` until it stops | 11 pm Sat |
-| 5 | Talks normally | `speech  <-` while talking, fades after 3 s | 11 pm Sat |
-| 6 | Waits | Judge long-presses the temple; the pendant says "Hi, I'm deaf. Please face me and speak slowly." | 11 pm Sat |
-| 7 | Hands the glasses to the next judge | Nothing to set up | 10 am Sun |
-
-Pitch, once: "A deaf person misses the doorbell, the siren, and their own name.
-Conversate already captions what people say to you. Earshot covers everything
-Conversate ignores, shows nothing the rest of the time, and when you need to
-answer, it speaks for you."
-
-## 7. Requirements
-
-P0 ships or we have no product. P1 ships if P0 is done by 11 pm Saturday. P2 is
-a stretch.
-
-| ID | Pri | Requirement | Pass if |
-|---|---|---|---|
-| R1 | P0 | Sound cue. Classify G2 mic audio; show one line for doorbell, knock, siren, alarm, horn, dog. | Each of the six test clips, played from a phone 1 m away, shows the right label within 1 s, 4 of 5 tries. |
-| R2 | P0 | Alarm tier. Siren or alarm takes the whole display, full brightness, suppresses all other cues until 2 s after it stops. | Siren clip plus a doorbell clip at the same time shows only ALARM. |
-| R3 | P0 | Blank by default. | 30 s of hallway noise with nobody addressing the wearer shows nothing. |
-| R4 | P0 | Runs as an Even Hub Beta build on a physical G2. | Installed from the Beta group on the phone the G2 is paired to; survives a 5-minute phone lock; double-tap exits via the system dialog. |
-| R5 | P1 | Name flash. The demo name, spoken from 2 m, shows YOUR NAME. | 4 of 5 tries; zero false flashes in 60 s of other speech. |
-| R6 | P1 | Speech cue. Someone other than the wearer talking shows `speech`; the wearer's own voice does not. | Wearer talks: nothing. Teammate talks: cue within 1 s. |
-| R7 | P1 | Direction. Every cue carries left, right, front, or behind. | Correct side 9 of 10 at 1 m. Source is the G2's own direction tag; if it carries no data, R7 is dropped. |
-| R8 | P2 | Companion phone page with an event log a judge can scroll. | Exists and matches what the glasses showed. |
-| R9 | P1 | Outbound phrase. Swipe on the temple picks one of three phrases, shown on the HUD. Long-press plays it from a speaker (an Android phone worn as a pendant). Phrases: "Hi, I'm deaf. Please face me and speak slowly." / "Could you repeat that?" / "Could you type it on your phone?" | A judge 1 m away hears the phrase within 1 s of the press, 5 of 5 tries. |
-
-## 8. Success metrics
-
-- Sound-to-HUD latency for a doorbell under 1.0 s, measured by filming the
-  glasses and the speaker together and counting frames.
-- Direction correct 9 of 10 at 1 m, if R7 ships.
-- Zero false cues in 60 s of hall noise at the judging table.
-- Five consecutive clean runs of the demo script Sunday morning.
-
-## 9. Constraints from the sponsor (hard rules)
-
-- App name 20 characters or fewer, must not contain "Even". Working name: Earshot.
-- No medical, financial, or emergency-routing apps. Health apps are wellness
-  only, no advice.
-- Submitted as an `.ehpk` on a Beta group, running on a physical G2 at judging.
-- Judged on: Made for G2, Originality, User Experience, Technical Execution.
-  Judges ask: who uses this and when, why G2, can I try it right now.
-- Even says teleprompters, translators, and note-takers won't stand out.
-
-## 10. Risks
-
-| Risk | Likelihood | If it happens |
+| # | does | judge sees |
 |---|---|---|
-| The G2 audio stream is speech-filtered and drops doorbells or knocks | medium | Use the phone mic (one-line change). If still bad, laptop mic classifies, glasses display only. |
-| The G2 `direction` tag is null on current firmware | medium | Ship without R7. The product is the same minus the arrow. |
-| Venue noise causes false cues | high | Higher thresholds, require two consecutive windows, demo with a speaker and clean clips. |
-| Phone can't reach the laptop | medium | Everything on one hotspot; whitelist the exact origin. |
-| Packaging or Beta flow rejects us at the last minute | low | Pack a throwaway build at integration tonight, not Sunday morning. |
+| 1 | plays a doorbell clip on the right | `doorbell  ----->` for 4 s, then blank |
+| 2 | claps once on the left | `<-----  clapping` for 4 s, then blank |
+| 3 | plays a smoke alarm clip | full screen `ALARM` until it stops |
+| 4 | snaps fingers by the right ear | `snap  ----->` |
+| 5 | talks normally | `speech  <-----` while talking, fades after 3 s |
+| 6 | hands the glasses to the next judge | nothing to set up |
 
-## 11. Open questions (answer tonight)
+## 5. How it works
 
-1. Demo name. A teammate's first name, two syllables.
-2. Does the G2 `direction` field carry real data on current firmware? Decided
-   by the Tier 0 test, PLAN.md section 4.3.
-3. Can the Even WebView on iOS play audio after one screen tap? If yes, Wendy
-   has a zero-hardware fallback for R9 if the pendant slips.
+```
+ G2 glasses ──Bluetooth──▶ phone: Even app running plugin/ ──WebSocket──▶ laptop: server/
+   4 mics, 16 kHz PCM        sends every audio frame up                     hub + state machine
+   + direction tag           draws whatever state comes down                       │
+   + speakerRole                      ▲                                             ▼
+                                      │                                   phone app: audio_classification/
+                                      └──────────── HUD state ◀─────────  YAMNet, scores back to the hub
+```
 
-## 12. Decisions made
+- `plugin/` (Wendy): the Even Hub app. A Vite and TypeScript page the Even
+  app loads in a WebView. Forwards each audio event, with the glasses'
+  `direction` and `speakerRole` fields, to the hub, and renders the state
+  that comes back as one text container with ASCII arrows, three alert tiers,
+  and flashing. Demo mode with `?demo=1`. Its fake server records what the
+  glasses hear.
+- `server/` (Nikhil, state machine spec by Dara): a FastAPI hub. Relays
+  glasses audio to the classifier app and classifier scores back through
+  `labels.py` (YAMNet class map, per-label thresholds, k-of-n hit rules,
+  cooldowns), `direction.py` (the G2 tag to a side), and `state.py` (alarm
+  beats name beats cue beats speech beats idle, with hold times). Mock mode
+  and WAV replay so it runs without glasses. Tests in `test_state.py`.
+- `audio_classification/` (Nikhil): the TensorFlow Lite audio classification
+  example, with `EarshotLink.swift` added so the iOS build takes audio from
+  the hub and returns YAMNet scores. Before the model: a 600 Hz high-pass
+  and per-window gain, because the G2 stream is dominated by rumble under
+  300 Hz and raw YAMNet hears "Music, Throbbing".
+- `tools/` (Dara): `eval.py` scores the whole pipeline on saved clips;
+  `dirtest.py` reads a server dump and shows what the direction tag did at
+  each snap or knock.
 
-- 2026-10-17 15:00: robot arm dropped. No parts, no time.
-- 2026-10-17 16:30: CPR and EMT dropped. Even Hub bans medical and emergency apps.
-- 2026-10-17 17:00: captions dropped. Conversate exists; SDK has no STT; Even
-  says caption apps won't stand out.
-- 2026-10-17 17:10: phase 1 uses only the G2 mic. External hardware is for
-  direction only, and only if the glasses can't provide it.
-- 2026-10-17 19:20: ESP32 mic node dropped (the G2 mic is the only
-  microphone we use; direction comes from the G2 tag or not at all). Added
-  the outbound phrase, R9: an Android phone on a lanyard as the speaker,
-  built by Iurii. The G2 has no speaker; audio always comes from a phone.
+Message formats, so the pieces could be built on separate laptops:
+
+```
+plugin → hub   {"t":"audio","pcm":"<base64 int16 LE 16 kHz mono>","direction":int|null,"speakerRole":"self|other|unknown","ts":ms}
+hub → app      the same frame, unchanged
+app → hub      {"t":"result","ts":ms,"inference_ms":n,"top":[{"label":"Doorbell","score":0.82},...]}
+hub → plugin   {"state":"idle|cue|speech|name|alarm","label":"doorbell|knock|siren|alarm|horn|dog|clap|snap|speech","dir":"left|right|center|near","ttl_ms":n,"level":1..4}
+```
+
+## 6. What we measured
+
+Full tables in `docs/eval-2026-10-17.md` and `docs/direction-test.md`.
+
+Classifier, 22 clips (6 doorbells from Wikimedia Commons, the rest ESC-50,
+plus one smoke alarm recorded through the G2), scored by whether the HUD
+would have shown the label:
+
+| preprocessing | alarm | siren | doorbell | knock | horn | dog | false cues on 6 noise clips |
+|---|---|---|---|---|---|---|---|
+| raw audio | 2/4 | 2/3 | 3/6 | 3/3 | 2/3 | 3/3 | 0 |
+| 600 Hz high-pass + gain (what ships) | 4/4 | 3/3 | 2/6 | 0/3 | 1/3 | 3/3 | 0 |
+| both, max score per label | 4/4 | 3/3 | 4/6 | 3/3 | 2/3 | 3/3 | 0 |
+
+Time from sound start to HUD state, classifier only: about 1 s for alarm,
+siren, knock, horn; 2.5 s for dog; 3 s for doorbell (the second ring is what
+crosses the 2-of-3 windows rule). The real smoke alarm through the G2 reaches
+ALARM at 1.0 s with the high-pass and never fires without it.
+
+Direction, 16 finger snaps at 1 m through the real glasses: correct side 8
+of 10 for left and right. Front reads center 2 of 3. Behind reads wrong
+more often than not; the glasses cannot tell front from behind.
+
+## 7. What we deliberately did not build
+
+- Captions or transcription. Conversate exists, the SDK has no speech
+  recognition API, and Even's judges said caption apps will not stand out.
+- Anything medical or emergency-routing. Even Hub bans these. We display
+  sounds; we never call anyone.
+- Name detection. Planned as a Picovoice keyword spotter; first on the cut
+  list and cut at the 11 pm checkpoint.
+- The outbound "I'm deaf, please face me" phrase from a pendant speaker.
+  Designed Saturday evening, the hub relays the message, but the phone-side
+  app was not built in time.
+- External microphones or an ESP32 direction node. Not needed once the
+  glasses' own direction tag turned out to carry data.
+- A camera. The G2 has none and the product does not need one.
+
+## 8. Decisions, in order
+
+| when | decision | why |
+|---|---|---|
+| Sat 15:00 | drop the robot arm we came with | no servos, no fasteners, no time |
+| Sat 16:30 | drop CPR coaching and EMT tools | Even Hub bans medical and emergency-routing apps |
+| Sat 17:00 | drop captions | Conversate does it; no STT in the SDK; Even says caption apps will not stand out |
+| Sat 17:10 | everything runs on the G2 mic alone | the kit had no other microphone |
+| Sat 19:20 | drop the ESP32 mic node; add a pendant speaker | the glasses' direction tag looked real; the G2 has no speaker |
+| Sat 20:00 | classifier moves from the laptop to a phone app | TensorFlow would not install cleanly; the TFLite example runs YAMNet on device |
+| Sat 22:00 | 600 Hz high-pass before YAMNet | raw G2 audio reads as rumble; a real alarm scored 0.3 to 0.5 after filtering, never before |
+| Sat 23:00 | name flash cut | not started; everything else was closer |
+| Sat 23:20 | direction window 1 s to 3 s, vote with peak-loud frames | snaps read "center" because room frames outvoted them |
+| Sat 23:40 | pair each frame's loudness with the previous frame's tag | 16 snaps showed the tag leads its audio by one frame; 4/10 became 8/10 |
+| Sun 07:55 | remove the second glasses app | an on-phone YAMNet scaffold at milestone 0; one app ships |
+| Sun 09:00 | keep the single filtered classifier path; demo with alarm, siren, dog, clap and snap | the two-path fix for knocks was measured but changing the phone app before noon was not worth the risk |
+
+## 9. Known limitations
+
+- Front and behind are indistinguishable; the HUD shows "center" for both.
+- Knocks are not detected, and only 2 of 6 doorbells are. The 600 Hz
+  high-pass that alarms need through the G2 removes them. The measured fix,
+  running YAMNet on the raw window as well and keeping the higher score per
+  label (`tools/eval.py --dual`, 19 of 22 instead of 13), was a deliberate
+  non-change on Sunday morning: the demo uses the sounds that work.
+- The audio path has four hops (glasses, phone, laptop, phone, laptop,
+  phone, glasses). The hub logs the round trip per window; end-to-end
+  latency was not measured on video.
+- 21 of the 22 eval clips are studio recordings. Only the smoke alarm went
+  through the G2's microphones.
+- The hub's address is baked into `plugin/app.json`; a new network means a
+  new whitelist entry and a repack.
+
+## 10. Prior art
+
+Sound awareness for deaf users has won at three 2026 hackathons on phones or
+headsets: SoundSense (Reality Hack at MIT, Best Use of Edge AI for Hardware),
+Synesthesia (HackGT 13, The Shipyard 1st), Here (Knight Hacks IX). None ran
+on display-only glasses. Even Hub's community catalog had captions apps and
+nothing for non-speech sound. Details and links in `docs/RESEARCH.md`.

@@ -82,8 +82,9 @@ Findings:
 
 Pitch number: correct side 8 of 10 at 1 m.
 
-## Still to do
+## Status
 
-The four-position test from the plan: stand 1 m away, talk 5 s from left,
-right, front, behind, read the angle off the server's `TIER0` log line, and
-write the numbers here. Then the pitch number: correct side N of 10 at 1 m.
+Left and right ship with the pitch number above. Front and behind do not;
+the plugin draws both as "center". If Even exposes per-microphone capture
+(their FAQ lists it as on the roadmap), the same tracker could do a real
+four-way estimate.

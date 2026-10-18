@@ -1,6 +1,6 @@
 """Fake Earshot server for plugin development.
 
-Sends one HUD state from PLAN.md section 3 every 4 s, and prints a once-per-second
+Sends one HUD state from PRD.md section 5 every 4 s, and prints a once-per-second
 summary of the audio frames the plugin sends up (frames/s, RMS, direction, speakerRole).
 
     pip install websockets

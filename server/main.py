@@ -1,15 +1,14 @@
-"""Earshot hub: glasses <-> iPhone classifier, plus the pendant relay.
+"""Earshot hub: glasses <-> iPhone classifier.
 
     python main.py            # real: needs the plugin and the iPhone classifier
     python main.py --mock     # cycles every HUD state every 5 s, no classifier
 
 Sockets (all on port 8000):
-  /ws/glasses     the plugin. Sends audio and say frames (PLAN.md section 3),
+  /ws/glasses     the plugin. Sends audio frames (PRD.md section 5),
                   receives HUD state frames.
   /ws/classifier  the iPhone YAMNet app. Receives every audio frame unchanged,
                   sends back {"t":"result","ts":<newest audio ts>,"inference_ms":n,
                   "top":[{"label":"Doorbell","score":0.82}, ...]}.
-  /ws/pendant     the Android pendant. Receives say frames unchanged.
   GET /           status JSON.
 """
 
@@ -96,7 +95,6 @@ class Hub:
         self.dump = dump  # open file: one JSON line per audio frame, for tools/dirtest.py
         self.glasses: set[Peer] = set()
         self.classifiers: set[Peer] = set()
-        self.pendants: set[Peer] = set()
         self.sm = StateMachine()
         self.frame = {"state": "idle"}
         self.speaker_role = "unknown"
@@ -162,11 +160,6 @@ class Hub:
         mine = " ".join(f"{k}={v:.2f}" for k, v in scores.items())
         log(f"RESULT rtt={rtt} inf={msg.get('inference_ms', '?')}ms  {top3}  -> {mine or '-'}")
 
-    def on_say(self, raw: str):
-        log("SAY", raw, f"-> {len(self.pendants)} pendant(s)")
-        for p in self.pendants:
-            p.send(raw)
-
     async def tick_loop(self):
         while True:
             frame = self.sm.step(time.time())
@@ -197,7 +190,6 @@ def make_app(hub: Hub) -> FastAPI:
             "mode": "mock" if hub.mock else "live",
             "glasses": len(hub.glasses),
             "classifiers": len(hub.classifiers),
-            "pendants": len(hub.pendants),
             "audio_frames": hub.audio_frames,
             "results": hub.results,
             "state": hub.frame,
@@ -238,8 +230,6 @@ def make_app(hub: Hub) -> FastAPI:
         t = msg.get("t")
         if t == "audio":
             hub.on_audio(raw, msg)
-        elif t == "say":
-            hub.on_say(raw)
 
     def from_classifier(raw, msg):
         if msg.get("t") == "result" and not hub.mock:
@@ -252,10 +242,6 @@ def make_app(hub: Hub) -> FastAPI:
     @app.websocket("/ws/classifier")
     async def ws_classifier(ws: WebSocket):
         await serve(ws, hub.classifiers, "classifier", from_classifier)
-
-    @app.websocket("/ws/pendant")
-    async def ws_pendant(ws: WebSocket):
-        await serve(ws, hub.pendants, "pendant", lambda raw, msg: None)
 
     return app
 

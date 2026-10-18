@@ -1,4 +1,4 @@
-// Draws a HudState (PLAN.md section 3) on the glasses.
+// Draws a HudState (PRD.md section 5) on the glasses.
 //
 // One full-screen text container, updated only with textContainerUpgrade,
 // brightness via textColor, at least 150 ms between writes (only the latest
