@@ -16,7 +16,7 @@ back from judging (away 6 to 9).
 | Glasses app | Wendy | `plugin/` | it ships with a 30 line fake server |
 | Listening server | Nikhil | `server/` | it has a mock mode and takes WAV files |
 | Direction node | Iurii | `firmware/` | it posts to a tiny receiver script in its own folder |
-| Measurement and submission | Dara | `tools/`, `docs/`, Devpost | its scripts read the same formats and run on saved files |
+| Evals and submission | Dara | `tools/`, `docs/`, Devpost | its scripts read the same formats and run on saved files |
 
 Git: everyone on `main`, small commits, `git pull --rebase` before pushing.
 Edit only your own folder. If you are stuck for 20 minutes, say so in the
@@ -56,7 +56,7 @@ Words used below:
                         ESP32 with two mics on a cap, only if mic modules exist
 
                         tools/     Dara
-                        record.py saves what the glasses hear; eval.py scores the classifier on clips
+                        record.py saves what the glasses hear; eval.py scores the classifier on every clip
 ```
 
 ## 3. Message formats
@@ -286,7 +286,7 @@ Done when: `docs/direction-test.md` has the Tier 0 numbers and a verdict, and
 either the ESP32 posts the correct side 9 of 10 at 1 m or the file says we
 ship without the arrow.
 
-### 4.4 Dara: measurement, glasses, submission (`tools/`, `docs/`, Devpost)
+### 4.4 Dara: evals, direction mapping, submission (`tools/`, `docs/`, Devpost)
 
 Away until 9. Nothing here starts before then. Two things the team covers
 in the meantime:
