@@ -1,106 +1,107 @@
 # Cue
 
-(Formerly Earshot; code identifiers still use the old name.)
-
 Sound awareness for deaf and hard-of-hearing people, on Even Realities G2
-smart glasses. The glasses stay blank. When a sound you cannot hear matters,
-a doorbell, a knock, a siren, an alarm, one line appears in your line of
-sight saying what it was and which side it came from. Then the display goes
-blank again. When you need to answer, your phone rings like a call, shows the
-sound and the replies, and speaks the one you press.
+smart glasses.
+
+The glasses stay blank. When a sound you cannot hear matters, one line appears
+in your line of sight saying what it was and which side it came from, then the
+display goes blank again. When someone talks to you, their words appear under
+an arrow to where they stand. When you need to answer, your phone rings like a
+call, shows the sound and three replies, and speaks the one you press.
 
 Built in 24 hours at LA Hacks AI Hackathon, UCLA, 17 to 18 October 2026, for
-the Beyond the Digital track and the Even Realities challenge.
+the Beyond the Digital track and the Even Realities challenge. The full record
+(problem, design, measurements, every decision and why) is in `PRD.md`.
 
-## Why
+## Why glasses
 
-Even's G2 already captions speech with its built-in Conversate mode. Nothing
-on the glasses handles the sounds that are not speech, and a phone is too
-slow: by the time you look at it, the sound is over. Cue covers
-what Conversate ignores, and captions the person talking to you with an
-arrow to where they stand, with no external hardware. The G2 has no
-speaker, which costs a deaf user nothing.
+A phone is too slow: by the time you take it out and look, the sound is over.
+The G2 puts the cue where you are already looking, hands free. It has no
+speaker, which costs a deaf user nothing. Even's built-in Conversate mode
+captions speech but does not say that a doorbell rang or which side a voice
+came from. Cue does both, with no hardware beyond the glasses and a phone.
 
-## What it detects
+## What it does
 
-Doorbell, knock, siren, alarm, car horn, dog bark, clap, snap. When someone
-else speaks, their words appear as live captions under an arrow for the side
-they are on; the wearer's own voice is never captioned. Alarms and sirens
-take the whole display and replace captions while they last. Direction comes
-from the glasses' own microphone array: left and right, with front and behind
-drawn as "center" because the glasses cannot tell them apart.
-
-The wearer chooses which sounds to see, and how loudly each one alerts, right
-on the glasses: tap the touchpad, swipe to a sound, tap to cycle it
-off, normal, medium, critical, then tap DONE to save. (Long-press opens
-Even AI, not the menu.)
-Double-tap leaves without saving. Alarm and siren are always on. The same
-choices are on the phone page.
+- Detects doorbell, knock, siren, alarm, car horn, dog bark, clap, and snap.
+  Alarms and sirens take the whole display until they stop.
+- Shows direction from the glasses' own microphone array: left or right.
+  Front and behind read the same to the G2 and are drawn as "center".
+- Captions anyone else who speaks, under the arrow for their side. The
+  wearer's own voice is never captioned. Any sound replaces the captions.
+- Lets the wearer choose, on the glasses, which sounds to see and how loudly
+  each alerts: tap the touchpad for the menu, swipe to a sound, tap to cycle
+  off / normal / medium / critical, tap DONE. Alarm and siren are always on.
+- Rings the wearer's Android phone like an incoming call for critical and
+  medium sounds, with the sound, its direction, and one button per reply.
+  A reply is spoken aloud; "please type" opens a page over the lock screen
+  for the other person to type on.
 
 ## How it works
 
 ```
- G2 glasses ──Bluetooth──▶ Even app running plugin/ ──WebSocket──▶ server/ (laptop hub)
-                            forwards audio, draws the HUD                 │
-                                     ▲                                    ▼
-                                     └──── HUD state ◀──── audio_classification/ (phone, YAMNet)
+G2 glasses ──Bluetooth──▶ phone: Even app + plugin/ ──WebSocket──▶ laptop: server/ ──▶ phone: audio_classification/
+ 4 mics, direction tag      forwards audio, draws HUD        ◀── HUD state    hub, rules     ◀── YAMNet scores
+                                                                     │
+                                                                     └──▶ Android: android-companion/
+                                                                          rings, speaks replies
 ```
 
-| folder | what | owner |
+| folder | what | who |
 |---|---|---|
-| `plugin/` | the Even Hub app: streams glasses audio up, draws one line on the lenses | Wendy |
-| `server/` | the hub: YAMNet label map, thresholds, direction from the G2 tag, the state machine, mock mode | Nikhil, state machine spec by Dara |
-| `audio_classification/` | TensorFlow Lite audio example with `EarshotLink.swift`: runs YAMNet on a phone and returns scores to the hub | Nikhil |
-| `android-companion/` | Android app: rings like a call on urgent sounds, speaks replies, shows a type-here page over the lock screen | Iurii |
-| `tools/` | `eval.py` scores the pipeline on saved clips; `dirtest.py` analyses the direction tag | Dara |
-| `docs/` | research, eval results, direction findings, `ARCHITECTURE.md` (the sound path end to end), `BRIDGE.md` (glasses-to-phone protocol), the pitch deck copy | |
-
-Read `PRD.md` for the full record: problem, design, measurements, every
-decision and why.
+| `plugin/` | the Even Hub app: streams glasses audio up, draws one line on the lenses, the on-glasses menu | Wendy |
+| `server/` | the hub: YAMNet label map and thresholds, direction from the G2 tag, the state machine, live captions, mock mode | Nikhil; state machine spec, Dara |
+| `audio_classification/` | TensorFlow Lite audio example with `EarshotLink.swift`: runs YAMNet on an iPhone, returns scores to the hub | Nikhil |
+| `android-companion/` | rings like a call on urgent sounds, speaks replies, type-here page over the lock screen | Iurii |
+| `tools/` | `eval.py` scores the pipeline on saved clips; `dirtest.py` reads the direction tag at each snap | Dara |
+| `docs/` | `ARCHITECTURE.md` (the sound path end to end), `BRIDGE.md` (glasses-to-phone protocol), `RESEARCH.md`, eval and direction results, deck copy | |
 
 ## Run it
 
-Three things on one Wi-Fi network (a phone hotspot; venue Wi-Fi usually
-blocks phone-to-laptop traffic).
+Everything on one Wi-Fi network. Use a phone hotspot; venue Wi-Fi usually
+blocks phone-to-laptop traffic.
 
-1. Hub, on a laptop:
+1. **Hub**, on a laptop. Prints the addresses the other pieces connect to.
    ```bash
-   cd server && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-   .venv/bin/python main.py --stt whisper   # prints the addresses to point the other two at; --stt deepgram with DEEPGRAM_API_KEY for faster captions
-   .venv/bin/python main.py --mock   # cycles every HUD state with no audio, for plugin work
+   cd server
+   python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+   .venv/bin/python main.py --stt whisper      # offline captions, 1 to 2 s behind; first run downloads the model
+   # or: DEEPGRAM_API_KEY=... .venv/bin/python main.py --stt deepgram   (about 0.5 s behind, needs internet)
+   # or: .venv/bin/python main.py --mock       (cycles every HUD state, no audio; for plugin work)
    ```
-2. Classifier, on an iPhone: open
-   `audio_classification/ios/AudioClassification.xcworkspace`, run it, tap
-   the status text, enter `ws://LAPTOP_IP:8000/ws/classifier`, choose "Use
-   glasses audio". Without a phone, `server/fake_classifier.py --model
-   ../audio_classification/ios/AudioClassification/TFLite/yamnet.tflite`
+2. **Classifier**, on an iPhone. Open
+   `audio_classification/ios/AudioClassification.xcworkspace`, run it, tap the
+   status text, enter `ws://LAPTOP_IP:8000/ws/classifier`, choose "Use glasses
+   audio". No iPhone? `server/fake_classifier.py --model ../audio_classification/ios/AudioClassification/TFLite/yamnet.tflite`
    runs the same model on the laptop.
-3. Glasses app:
+3. **Glasses app.**
    ```bash
    cd plugin && npm install
-   # put the hub's http:// and ws:// origins in app.json under permissions → network → whitelist
-   npm run dev                                   # then, on the phone, scan:
-   npx evenhub qr --url http://LAPTOP_IP:5173
+   # app.json → permissions → network → whitelist: the hub's exact http:// and ws:// origins
+   npm run dev
+   npx evenhub qr --url http://LAPTOP_IP:5173   # scan from the Even app
    ```
-   To install as a Beta build: `npm run build && npx evenhub pack app.json dist -o cue.ehpk`,
-   upload at https://evenhub.evenrealities.com to a Beta group containing
-   your Even account email, then on the phone: Me, Beta tester, install.
-   The app needs the `g2-microphone` permission and nothing else; no keys.
+   Beta install: `npm run build && npx evenhub pack app.json dist -o cue.ehpk`,
+   upload at https://evenhub.evenrealities.com to a Beta group containing your
+   Even account email, then on the phone: Me, Beta tester, install. The app
+   needs only the `g2-microphone` permission; no keys.
+4. **Companion**, on an Android phone. Build per `android-companion/README.md`,
+   then in the app: Connection, `ws://LAPTOP_IP:8000/ws/pendant`, Apply.
 
-4. Companion, on an Android phone: see `android-companion/README.md` for the
-   build, then in the app choose Connection, enter `ws://LAPTOP_IP:8000/ws/pendant`,
-   Apply.
-
-Measure it: `python3 -m venv .venv && .venv/bin/pip install numpy ai-edge-litert && .venv/bin/python tools/eval.py --dual`.
+To measure instead of run: `python3 -m venv .venv && .venv/bin/pip install numpy ai-edge-litert && .venv/bin/python tools/eval.py`.
 
 ## Results
 
-22 test clips through the shipped pipeline: alarm 4/4, siren 3/3, dog 3/3,
-and zero false cues on 6 noise clips. Knocks and most doorbells are lost to
-the high-pass filter that alarms need; a measured two-path fix gets 19 of 22
-but was not shipped. About 1 s from sound to HUD state for alarms and
-sirens. Direction correct 8 of 10 at 1 m. Details and caveats in
-`docs/eval-2026-10-17.md` and `docs/direction-test.md`.
+| | |
+|---|---|
+| Detection, 22 test clips | alarm 4/4, siren 3/3, dog 3/3, zero false cues on 6 noise clips |
+| Sound to HUD state | about 1 s for alarms and sirens |
+| Direction, 16 snaps at 1 m | correct side 8 of 10 |
+
+Knocks and most doorbells are lost to the high-pass filter that alarms need
+through the G2 microphones. A measured two-path fix reaches 19 of 22 and is
+documented, not shipped. Details and caveats in `docs/eval-2026-10-17.md` and
+`docs/direction-test.md`.
 
 ## Team
 
@@ -110,4 +111,5 @@ Wendy Wang (UCLA).
 ## License
 
 MIT. Test clips in `server/clips/` keep their own licenses, listed in
-`server/clips/SOURCES.md`.
+`server/clips/SOURCES.md`. The project was called Earshot until Sunday
+morning; code identifiers kept that name.
