@@ -29,3 +29,7 @@ npm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# iOS classifier app (recreate with `pod install` in audio_classification/ios)
+audio_classification/ios/Pods/
+xcuserdata/
