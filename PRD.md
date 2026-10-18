@@ -1,6 +1,6 @@
 # Earshot — PRD and build plan
 
-LA Hacks AI Hackathon 2026. Team: Dara, Iurii, Sainikhil, Ruiyang.
+LA Hacks AI Hackathon 2026. Team: Dara, Iurii, Nikhil, Wendy.
 Written Sat 2026-10-17 at 5:15 pm. **Deadline: Sun 12:00 pm.** About 18 hours.
 Repo: https://github.com/iuriiKolyadin/lahacks. Working name "Earshot" (7 chars,
 no "Even" in it, which Even's rules require).
@@ -96,13 +96,13 @@ Even's judges will ask three questions. Have the answers ready:
    │ BLE: 16 kHz PCM               │
    │ + direction tag               │  WebSocket  ws://<LAPTOP_IP>:8000/ws/glasses
    │ + speakerRole                 ▼
-   └──────────────────────▶  plugin (TypeScript, Ruiyang)
+   └──────────────────────▶  plugin (TypeScript, Wendy)
                               - forwards every audio event up
                               - renders whatever state comes down
                                    │ up:   {"pcm": base64, "direction": int|null, "speakerRole": "self|other|unknown"}
                                    │ down: {"state": "...", "label": "...", "dir": "...", "ttl_ms": N}
                                    ▼
-                            laptop server (Python, Sainikhil)
+                            laptop server (Python, Nikhil)
                               - YAMNet: sound class every 0.5 s
                               - Porcupine: name keyword
                               - urgency state machine
@@ -116,10 +116,10 @@ Even's judges will ask three questions. Have the answers ready:
 Three processes, three people, one contract each. Every node has a mock so
 nobody waits on anybody:
 - Server has `--mock`: cycles through every HUD state every 5 s with no audio.
-  Ruiyang builds the whole plugin against this.
+  Wendy builds the whole plugin against this.
 - Plugin has a `?demo=1` URL flag: cycles states locally with no server.
   Dara tests packaging and lifecycle against this.
-- Server accepts a WAV file with `--wav doorbell.wav`: Sainikhil tests the
+- Server accepts a WAV file with `--wav doorbell.wav`: Nikhil tests the
   classifier with no glasses.
 
 ### 3a. The contracts (do not change these without telling everyone)
@@ -163,7 +163,7 @@ it. `direction` is the raw int16 from the SDK or `null`. `ts` is `Date.now()`.
 | Item | Used for |
 |---|---|
 | Even G2 + Dara's iPhone with the Even app | the product |
-| Laptops | server (Sainikhil's), plugin dev (Ruiyang's), packaging (Dara's) |
+| Laptops | server (Nikhil's), plugin dev (Wendy's), packaging (Dara's) |
 | A second phone | hotspot, so the demo never touches venue Wi-Fi |
 | Plain ESP32 dev board | phase 2 direction node, only if mic modules exist |
 | Breadboard | same |
@@ -180,7 +180,7 @@ Each person: install the tools listed, do the steps in order, tick the "done
 when" test, then say so in the group chat. If stuck for 20 minutes, say so in
 the chat; don't sit on it. Dara reassigns.
 
-### 5.1 Ruiyang — glasses plugin and HUD
+### 5.1 Wendy — glasses plugin and HUD
 
 You own `plugin/`. You write the only code that runs on the phone and the
 glasses. Background: this is a Vite + TypeScript web app; the Even app loads it
@@ -239,7 +239,7 @@ Docs you will actually need, in order:
    Android) the socket die when the phone locks.
 7. (8:00) Test on real glasses with Dara: `npx evenhub qr --url
    http://LAPTOP_IP:5173` while the phone is on the hotspot. Then against
-   Sainikhil's server in `--mock` mode.
+   Nikhil's server in `--mock` mode.
 
 **Done when:** the server in `--mock` mode makes the real G2 show every row of
 the section 3a table, the text is readable and centered, double-tap exits, and
@@ -249,7 +249,7 @@ after locking the phone for 5 minutes and reopening the app the states resume.
 If the phone can't reach the laptop, it's the hotspot or the whitelist, not
 your code; grab Dara.
 
-### 5.2 Sainikhil — audio server
+### 5.2 Nikhil — audio server
 
 You own `server/`. One Python process on your laptop. It receives audio from
 the plugin, decides what's happening, and pushes a state back.
@@ -305,7 +305,7 @@ Model files, download now, commit to `server/models/`:
    Speech only if `speakerRole != "self"`, shows while detected, fades 3 s
    after. Name beats speech and cue. Emit a state frame only on change.
 5. (7:45) `--mock` flag: no audio; cycle idle, cue(doorbell,right),
-   speech(left), name(left), alarm(siren,behind) every 5 s. Ruiyang needs
+   speech(left), name(left), alarm(siren,behind) every 5 s. Wendy needs
    this by 7 pm at the latest, so do step 5 before step 4 if you're behind.
 6. (8:30) `name.py`: Porcupine. Feed it the same int16 stream in 512-sample
    frames. On detect, emit a `name` event.
@@ -313,7 +313,7 @@ Model files, download now, commit to `server/models/`:
    test says it tracks position, map it to left/right/front/behind using the
    thresholds from that test. Else if `/direction` has a value under 1 s old,
    use it. Else `near`.
-8. (9:30) Live test with Ruiyang's plugin on the real glasses. Tune
+8. (9:30) Live test with Wendy's plugin on the real glasses. Tune
    thresholds in the hall noise.
 
 **Done when:** with the real glasses connected, a phone-played doorbell
@@ -344,7 +344,7 @@ the sound clips. Phase 2 only starts if phase 1 isn't blocked on anything.
    right, front, behind, and record the numbers for each. Write them in
    `docs/direction-test.md`. Verdict: either the numbers separate by
    position (Tier 0 works, no hardware needed, hand the thresholds to
-   Sainikhil) or they're always `null` or noise (go to step 2).
+   Nikhil) or they're always `null` or noise (go to step 2).
 2. (6:00) **Mic modules.** Go to the MLH hardware table, if there is one. Ask
    for, in order: two I2S mic modules (INMP441, SPH0645, ICS-43434); or two
    analog mic/sound modules (KY-038, KY-037, MAX4466); plus ten male-to-female
@@ -363,11 +363,11 @@ the sound clips. Phase 2 only starts if phase 1 isn't blocked on anything.
 5. (8:00) **Demo rig.** Download the clips in section 7 to a phone. Borrow or
    buy a Bluetooth speaker; a phone speaker is too quiet in the hall. Tape
    L and R labels on the table. Find a cap for the mic strip if it exists.
-6. (8:30) **Bench test** with Sainikhil's server log open: talk from left
+6. (8:30) **Bench test** with Nikhil's server log open: talk from left
    and right; the log must show the right side 9 times out of 10 at 1 m.
    Record the number in `docs/direction-test.md`; it's our pitch number.
 7. (9:00) **Cutoff.** If left/right isn't working, stop, unplug it, and go
-   help Sainikhil tune thresholds. The product is unchanged without it.
+   help Nikhil tune thresholds. The product is unchanged without it.
 
 **Done when:** either `docs/direction-test.md` says Tier 0 works with
 thresholds, or the ESP32 POSTs the correct side 9 of 10 times, or it says
@@ -390,25 +390,25 @@ portal.
   Intelligence.
 
 **Steps**
-1. (5:20) Hotspot up on the second phone. Sainikhil's laptop and your iPhone
+1. (5:20) Hotspot up on the second phone. Nikhil's laptop and your iPhone
    join it. Write the laptop's IP in the group chat and in `README.md` as
    `LAPTOP_IP`. Hotspots usually hand out the same IP again; if it changes,
-   Ruiyang's whitelist has to be rebuilt, so don't toggle it.
-2. (5:30) Pair the G2, update firmware, run Ruiyang's step 1 template on the
+   Wendy's whitelist has to be rebuilt, so don't toggle it.
+2. (5:30) Pair the G2, update firmware, run Wendy's step 1 template on the
    real glasses with `npx evenhub qr --url http://LAPTOP_IP:5173`. One tap
    event must show in the console. Then do Iurii's step 1 direction test with
    him. While you're at it, dump 30 s of PCM to a WAV while Iurii plays a
-   doorbell and a siren, and give the WAV to Sainikhil; it tells him what the
+   doorbell and a siren, and give the WAV to Nikhil; it tells him what the
    G2 stream really sounds like.
 3. (6:00) Go to the Even table (closes 8 pm). Ask: does the `direction` field
    in `AudioEvent` work on current firmware, and what is its unit? Confirm
    the Beta group flow. Ask whether "sound awareness for deaf users" is
    considered medical (it isn't, but hear them say it).
 4. (6:30) Decide the demo name with the team (a teammate's first name, two
-   syllables, easy to say). Tell Sainikhil so he trains the Porcupine keyword.
+   syllables, easy to say). Tell Nikhil so he trains the Porcupine keyword.
 5. (7:00) Devpost page skeleton: title, one-line, the section 1 demo table
    turned into prose, "Built with" list. Leave the video for the morning.
-6. (8:00) First pack. With Ruiyang's `?demo=1` build:
+6. (8:00) First pack. With Wendy's `?demo=1` build:
    `npm run build && evenhub pack app.json dist -o earshot.ehpk`. Fix whatever
    the packer rejects now, not at 8 am. Then: developer portal, create a
    Beta group containing your own account email, upload under Builds, push to
@@ -461,7 +461,7 @@ That's the only reason any other hardware is in this document.
 - [ ] car horn, 2 s
 - [ ] dog bark, 2 s
 - [ ] 30 s of hallway crowd noise, for threshold tuning
-Also save each as a 16 kHz mono WAV in `server/clips/` for Sainikhil's
+Also save each as a 16 kHz mono WAV in `server/clips/` for Nikhil's
 `--wav` test (`ffmpeg -i in.mp3 -ar 16000 -ac 1 out.wav`; ffmpeg is on
 Dara's Mac).
 
@@ -475,7 +475,7 @@ Dara's Mac).
 
 **Accounts and keys**
 - [ ] Even developer access on Dara's account (done before 6 pm)
-- [ ] Picovoice account and the demo-name `.ppn` (Sainikhil, by 8:30 pm)
+- [ ] Picovoice account and the demo-name `.ppn` (Nikhil, by 8:30 pm)
 - [ ] Devpost project with all four members (Dara, by 7 pm)
 
 ---
@@ -503,10 +503,10 @@ Dara's Mac).
 
 | Risk | How we'll know | What we do |
 |---|---|---|
-| G2 audio is speech-filtered and drops doorbells or knocks | Dara's 5:30 WAV; Sainikhil's `--wav` test | Switch the plugin to `AudioInputSource.Phone` (one line). If still bad, laptop mic feeds YAMNet and the glasses only display. |
+| G2 audio is speech-filtered and drops doorbells or knocks | Dara's 5:30 WAV; Nikhil's `--wav` test | Switch the plugin to `AudioInputSource.Phone` (one line). If still bad, laptop mic feeds YAMNet and the glasses only display. |
 | `direction` is always null | 5:30 test | Tier B or no arrow. Product unchanged. |
 | Phone can't reach the laptop | 5:30 | It's the hotspot or the whitelist. Both phones and the laptop on the same hotspot; whitelist is the exact `http://IP:8000` and `ws://IP:8000`. |
-| Mic stream dies on phone lock | 12:30 am test | Re-call `audioControl(true)` and reconnect on `visibilitychange`. Already in Ruiyang's step 6. |
+| Mic stream dies on phone lock | 12:30 am test | Re-call `audioControl(true)` and reconnect on `visibilitychange`. Already in Wendy's step 6. |
 | Packer rejects the manifest | 8 pm throwaway pack | That's why we pack at 8 pm, not 8 am. |
 | Venue noise triggers false cues | 2 am tuning | Raise thresholds, require two consecutive windows, demo with clean clips on a speaker. |
 | Porcupine misses the name | 9:30 pm | Lower sensitivity, say the name twice in the demo, or cut it. |
