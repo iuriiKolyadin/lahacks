@@ -200,7 +200,7 @@ AR CPR guidance (Pulse at LA Hacks 2025, Proximity Pulse), captions
 
 | Even already has | Cue adds |
 |---|---|
-| Conversate: captions of speech | Nothing for speech. We show that speech happened and from where, never the words. |
+| Conversate: captions of speech | Captions too, but as the lowest-priority state and under an arrow to the side the speaker is on, which Conversate does not show. Any sound cue replaces them. |
 | A 4-mic array with a `direction` tag the SDK exposes but no app uses | The first app to use it, if the firmware fills it in; a two-mic fallback if not. |
 | Raw PCM to plugins, no classifier | YAMNet on the laptop naming doorbell, knock, siren, alarm, horn, dog. |
 | `speakerRole` self/other | A speech cue that ignores the wearer's own voice. |
