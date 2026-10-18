@@ -103,3 +103,8 @@ sirens. Direction correct 8 of 10 at 1 m. Details and caveats in
 
 Dara Miao (USC), Iurii Kolyadin (UC Irvine), Nikhil Marisetty (UT Dallas),
 Wendy Wang (UCLA).
+
+## License
+
+MIT. Test clips in `server/clips/` keep their own licenses, listed in
+`server/clips/SOURCES.md`.

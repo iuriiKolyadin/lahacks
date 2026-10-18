@@ -1,56 +1,53 @@
-# asr
+# Cue glasses app
 
-Live speech-to-text demo on G2. Mic audio → your chosen STT provider → transcript rendered on the glasses and mirrored in the companion WebView. Includes double-tap-to-exit wiring.
-
-**The STT client itself is a blank stub.** This template has zero vendor code baked in. You pick your own provider (Deepgram, AssemblyAI, Whisper, Soniox, self-hosted, etc.) and wire it up in `src/asr/stt.ts`.
+The Even Hub app. It runs in a WebView inside the Even phone app, turns on the
+G2 microphone, forwards every audio frame to the hub over a WebSocket, and
+draws whatever state the hub sends back as one line of text on the lenses.
+Started from Even's `asr` template; nothing of the template's speech-to-text
+remains.
 
 ## Run
 
 ```bash
-cp .env.example .env.local   # paste your STT provider's API key into VITE_STT_API_KEY
 npm install
-npm run dev
+npm run dev                                  # Vite on port 5173
+npm run simulate                             # desktop simulator against the dev server
+npx evenhub qr --url http://YOUR_LAPTOP_IP:5173   # scan from the Even app to load on real glasses
 ```
 
-Then `npm run simulate` (desktop simulator) or `npx evenhub qr --url http://<your-ip>:5173` to test on real glasses.
+The hub address comes from, in order: `?server=ws://host:8000/ws/glasses` in
+the URL, `VITE_SERVER_URL` at build time, or port 8000 on whatever host served
+the page. The hub's `http://` and `ws://` origins must also be in
+`app.json` under `permissions` → `network` → `whitelist`, exactly, no
+wildcards; the Even WebView blocks everything else.
 
-## First-run expectation
+Without a hub: `?demo=1` cycles through every HUD state every 4 s.
+`python fake_server.py` is a stand-in hub that sends states and prints what
+the glasses send up; `--save recordings/name` also writes the audio to WAV
+with a `.jsonl` of each frame's direction tag.
 
-Until you implement `src/asr/stt.ts`, the companion WebView shows a red error chip: *"STT provider not implemented — open src/asr/stt.ts and wire up your chosen STT service."* That's by design — the scaffold compiles and runs, but the STT handoff throws on startup so you know exactly where to go.
+Package for a Beta group: `npm run pack` produces the `.ehpk`. Upload it at
+https://evenhub.evenrealities.com, assign it to a Beta group containing your
+Even account email, then on the phone: Me, Beta tester, install.
 
-## What's in here
+## What is in `src/`
 
-| File | Purpose |
+| file | job |
 |---|---|
-| `src/main.ts` | App entry. Creates the transcript container, starts the mic, routes PCM chunks to `stt.ts`, renders snapshots with a 120ms debounce, handles double-tap exit. |
-| `src/asr/stt.ts` | **Blank stub.** Provider-agnostic `SttClient` interface + `startSttStream()` function. Implement your STT provider here. |
-| `src/ui.ts` | Companion-app UI — status chip, live transcript mirror, dark theme. |
-| `index.html` | WebView host with zoom-locked viewport. |
-| `app.json` | Manifest with `g2-microphone` permission. **No `network` permission by default** — add yours when you pick a provider. |
-| `.env.example` | `VITE_STT_API_KEY=` placeholder for your provider's key. |
+| `main.ts` | startup page, mic on, routes touchpad events, wires everything below |
+| `link.ts` | the WebSocket to the hub: audio frames up, state frames down, reconnect after 1 s |
+| `hud.ts` | draws a state: one text container, ASCII side arrows, three alert tiers with flashing, centering for the fixed font (`?scale=` and `?line=` to tune on real glasses) |
+| `menu.ts` | the on-glasses menu: tap opens, swipe moves, tap cycles a sound off / normal / medium / critical, DONE saves, double-tap cancels |
+| `settings.ts` | per-sound choice, kept in `localStorage`; alarm and siren locked to critical |
+| `alerts.ts` | tells the Android companion when a critical or medium sound is flashing, so the phone rings (`docs/BRIDGE.md`) |
+| `ui.ts` | the phone page: connection status, mic stats, the same per-sound settings, a mirror of what the lenses show |
 
-## Wiring your STT provider
+Touchpad: single tap opens the menu (a long-press on the G2 touchpad opens
+Even AI before any plugin sees it). Double-tap on the main page exits through
+the system dialog.
 
-1. Open `src/asr/stt.ts`. Replace the `throw` inside `startSttStream` with your provider's logic:
-   - Connect to the provider (WebSocket for streaming, HTTP for batch).
-   - Send the authentication / session-start message.
-   - On each inbound transcript message, build a `SttSnapshot { finalText, interimText, finished }` and call `onSnapshot()`.
-   - Implement `sendPcm(chunk)` to forward each mic chunk. The input is PCM s16le @ 16 kHz, mono — most providers accept this directly; resample if yours doesn't.
-   - Implement `close()` to signal end-of-stream.
+## Recordings
 
-2. Paste your API key into `.env.local` as `VITE_STT_API_KEY=...`.
-
-3. Add a `network` permission to `app.json` with your provider's hosts:
-
-   ```json
-   { "name": "network", "desc": "Stream audio to STT.", "whitelist": ["https://api.yourprovider.com", "wss://stream.yourprovider.com"] }
-   ```
-
-   `evenhub pack` rejects an empty whitelist, which is why this entry isn't in `app.json` by default.
-
-## G2 specifics
-
-- Mic format: PCM s16le, 16 kHz, mono. Delivered via `event.audioEvent.audioPcm` as `Uint8Array`.
-- Glasses render is debounced to 120 ms — the BLE queue can't keep up with per-token writes.
-- Transcript is trimmed to the last 240 characters to fit the 576x288 text container at default font.
-- **Double-tap the temple** → `shutDownPageContainer(1)` → system exit confirmation dialog.
+`recordings/alarm_1.wav` and `.jsonl` are a real smoke alarm captured through
+the G2 with the fake server, the data behind `docs/direction-test.md` and the
+alarm thresholds in `server/labels.py`.
