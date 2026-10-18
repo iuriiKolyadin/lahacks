@@ -13,7 +13,6 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import java.io.File
 import java.util.Locale
-import kotlin.math.ceil
 
 /**
  * Speaks phrases out loud. For instant playback, each configured phrase is
@@ -43,8 +42,6 @@ class Speaker(private val context: Context, private val onChange: () -> Unit) : 
     private val doneCallbacks = HashMap<String, () -> Unit>()
     private var current: MediaPlayer? = null
     private var counter = 0
-
-    var volumePercent = 100
 
     init {
         BridgeState.ttsStatus = "starting"
@@ -107,7 +104,6 @@ class Speaker(private val context: Context, private val onChange: () -> Unit) : 
      */
     fun speak(id: String?, text: String, onDone: () -> Unit = {}) {
         stopCurrent()
-        raiseVolume()
         requestFocus()
         val player = id?.let { players[it] }?.takeIf { it.first == text }?.second
         if (player != null) {
@@ -136,19 +132,6 @@ class Speaker(private val context: Context, private val onChange: () -> Unit) : 
         current?.let { if (it.isPlaying) it.pause() }
         current = null
         if (ready) tts.stop()
-    }
-
-    private fun raiseVolume() {
-        if (volumePercent <= 0) return
-        try {
-            val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-            val target = ceil(max * volumePercent / 100.0).toInt().coerceIn(1, max)
-            if (audio.getStreamVolume(AudioManager.STREAM_MUSIC) < target) {
-                audio.setStreamVolume(AudioManager.STREAM_MUSIC, target, 0)
-            }
-        } catch (e: Exception) {
-            BridgeState.log("ERR", "could not raise volume: ${e.message}")
-        }
     }
 
     /**

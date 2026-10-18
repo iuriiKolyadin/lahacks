@@ -1,14 +1,25 @@
 """Earshot hub: glasses <-> iPhone classifier.
 
-    python main.py            # real: needs the plugin and the iPhone classifier
-    python main.py --mock     # cycles every HUD state every 5 s, no classifier
+    python main.py              # real: needs the plugin and a classifier on /ws/classifier
+    python main.py --classify   # real, and runs YAMNet on this computer: no iPhone needed
+    python main.py --mock       # cycles every HUD state every 5 s, no classifier
 
 Sockets (all on port 8000):
+<<<<<<< Updated upstream
   /ws/glasses     the plugin. Sends audio frames (PRD.md section 5),
                   receives HUD state frames.
   /ws/classifier  the iPhone YAMNet app. Receives every audio frame unchanged,
                   sends back {"t":"result","ts":<newest audio ts>,"inference_ms":n,
                   "top":[{"label":"Doorbell","score":0.82}, ...]}.
+=======
+  /ws/glasses     the plugin. Sends audio and say frames (PLAN.md section 3)
+                  and alert frames (docs/BRIDGE.md), receives HUD state frames.
+  /ws/classifier  the iPhone YAMNet app, or fake_classifier.py --model on this
+                  computer (what --classify starts). Receives every audio frame unchanged,
+                  sends back {"t":"result","ts":<newest audio ts>,"inference_ms":n,
+                  "top":[{"label":"Doorbell","score":0.82}, ...]}.
+  /ws/pendant     the Android companion. Receives say and alert frames unchanged.
+>>>>>>> Stashed changes
   GET /           status JSON.
 """
 
@@ -31,6 +42,9 @@ import direction
 from state import StateMachine
 
 TICK_S = 0.1
+# The plugin resends an active alert every 5 s. A pendant that connects within
+# this long of the last one gets it replayed; anything older is stale.
+ALERT_FRESH_S = 10
 MOCK_STATES = [
     {"state": "idle"},
     {"state": "cue", "label": "doorbell", "dir": "right", "ttl_ms": 4000, "level": 4},
@@ -103,6 +117,7 @@ class Hub:
         self.audio_frames = 0
         self.results = 0
         self.last_result = None
+        self.alert = None  # newest alert frame from the plugin: {"raw", "msg", "at"}
         # audio ts -> laptop receive time, to measure the classifier round trip
         self.recv_at: OrderedDict[int, float] = OrderedDict()
         # Tier 0 log: once a second, what direction/speakerRole the glasses sent
@@ -160,6 +175,29 @@ class Hub:
         mine = " ".join(f"{k}={v:.2f}" for k, v in scores.items())
         log(f"RESULT rtt={rtt} inf={msg.get('inference_ms', '?')}ms  {top3}  -> {mine or '-'}")
 
+<<<<<<< Updated upstream
+=======
+    def on_say(self, raw: str):
+        log("SAY", raw, f"-> {len(self.pendants)} pendant(s)")
+        for p in self.pendants:
+            p.send(raw)
+
+    def on_alert(self, raw: str, msg: dict):
+        """Relay an alert frame to the pendants. Logged only when it changes, not on every 5 s refresh."""
+        prev = self.alert["msg"] if self.alert else {}
+        self.alert = {"raw": raw, "msg": msg, "at": time.time()}
+        if {k: v for k, v in msg.items() if k != "ts"} != {k: v for k, v in prev.items() if k != "ts"}:
+            log("ALERT", raw, f"-> {len(self.pendants)} pendant(s)")
+        for p in self.pendants:
+            p.send(raw)
+
+    def replay_alert(self, peer: Peer):
+        """A pendant that connects while an alert is active rings straight away."""
+        a = self.alert
+        if a and a["msg"].get("active") and time.time() - a["at"] < ALERT_FRESH_S:
+            peer.send(a["raw"])
+
+>>>>>>> Stashed changes
     async def tick_loop(self):
         while True:
             frame = self.sm.step(time.time())
@@ -198,6 +236,7 @@ def make_app(hub: Hub) -> FastAPI:
             "direction_tag": hub.direction_tag,
             "direction_deg": hub.dir_tracker.angle(),
             "direction": hub.dir_tracker.side(),
+            "alert": hub.alert["msg"] if hub.alert else None,
         }
 
     async def serve(ws: WebSocket, pool: set, name: str, on_text):
@@ -207,6 +246,8 @@ def make_app(hub: Hub) -> FastAPI:
         log(f"{name} connected {ws.client}  ({len(pool)} now)")
         if name == "glasses":
             peer.send(json.dumps(hub.frame))
+        elif name == "pendant":
+            hub.replay_alert(peer)
         try:
             while True:
                 raw = await ws.receive_text()
@@ -230,6 +271,13 @@ def make_app(hub: Hub) -> FastAPI:
         t = msg.get("t")
         if t == "audio":
             hub.on_audio(raw, msg)
+<<<<<<< Updated upstream
+=======
+        elif t == "say":
+            hub.on_say(raw)
+        elif msg.get("type") == "alert":
+            hub.on_alert(raw, msg)
+>>>>>>> Stashed changes
 
     def from_classifier(raw, msg):
         if msg.get("t") == "result" and not hub.mock:
@@ -296,9 +344,35 @@ def listen_sockets(port: int) -> list:
     return socks
 
 
+def start_local_classifier(port: int, host: str | None):
+    """Run YAMNet on this computer (fake_classifier.py --model) as a child process
+    that connects back to /ws/classifier. Its results show up as RESULT lines here."""
+    import atexit
+    import subprocess
+
+    try:
+        import ai_edge_litert  # noqa: F401
+        import numpy  # noqa: F401
+    except ImportError:
+        raise SystemExit("--classify needs the model packages: pip install -r requirements-model.txt")
+    here = os.path.dirname(os.path.abspath(__file__))
+    target = "127.0.0.1" if host in (None, "0.0.0.0") else ("::1" if host == "::" else host)
+    if ":" in target:
+        target = f"[{target}]"
+    proc = subprocess.Popen(
+        [sys.executable, os.path.join(here, "fake_classifier.py"), "--model", "--quiet",
+         "--url", f"ws://{target}:{port}/ws/classifier"],
+        cwd=here,
+    )
+    atexit.register(proc.terminate)
+    log(f"classifier: YAMNet on this computer (pid {proc.pid}); no iPhone needed")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mock", action="store_true", help="cycle every HUD state every 5 s")
+    ap.add_argument("--classify", action="store_true",
+                    help="run YAMNet on this computer instead of the iPhone app (needs requirements-model.txt)")
     ap.add_argument("--host", help="listen on this address only (default: all IPv4 and IPv6)")
     ap.add_argument("--port", type=int, default=8000)
     ap.add_argument("--dump", help="append every audio frame's direction tag and rms to this .jsonl (read with tools/dirtest.py)")
@@ -306,13 +380,16 @@ def main():
     hub = Hub(mock=args.mock, dump=open(args.dump, "a", buffering=1) if args.dump else None)
     app = make_app(hub)
     opts = dict(log_level="warning", ws_max_size=4 * 1024 * 1024)
+    if args.classify and not args.mock:
+        start_local_classifier(args.port, args.host)  # retries until the server below is listening
     if args.host:
         uvicorn.run(app, host=args.host, port=args.port, **opts)
         return
     socks = listen_sockets(args.port)
-    log(f"Earshot hub ({'mock' if args.mock else 'live'}) on port {args.port}. Point the plugin and the iPhone at:")
+    log(f"Earshot hub ({'mock' if args.mock else 'live'}) on port {args.port}. Point the devices at:")
     for base in lan_urls(args.port):
-        log(f"  {base}/ws/glasses    {base}/ws/classifier")
+        log(f"  plugin {base}/ws/glasses    companion {base}/ws/pendant"
+            + ("" if args.classify else f"    iPhone {base}/ws/classifier"))
     log("Nothing more prints until something connects.")
     uvicorn.Server(uvicorn.Config(app, **opts)).run(sockets=socks)
 

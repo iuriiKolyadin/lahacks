@@ -14,6 +14,13 @@ export type Label = NonNullable<HudState['label']>
 export const LABELS: Label[] = ['alarm', 'siren', 'name', 'doorbell', 'knock', 'horn', 'dog', 'clap', 'snap', 'speech']
 export const LOCKED: ReadonlySet<Label> = new Set(['alarm', 'siren'])
 
+/** What each sound is called on the phone (this page, and the companion's alert screen). */
+export const LABEL_NAMES: Record<Label, string> = {
+  alarm: 'Smoke / fire alarm', siren: 'Siren', name: 'Your name', doorbell: 'Doorbell',
+  knock: 'Knock', horn: 'Car horn', dog: 'Dog bark', clap: 'Clapping', snap: 'Finger snap',
+  speech: 'Someone talking',
+}
+
 const DEFAULTS: Record<Label, Tier> = {
   alarm: 'critical',
   siren: 'critical',

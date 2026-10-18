@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.Typeface
-import android.media.AudioManager
 import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.Build
@@ -21,6 +20,7 @@ import android.util.TypedValue
 import android.view.View
 import android.view.WindowInsets
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.RadioButton
@@ -28,6 +28,7 @@ import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import org.json.JSONObject
 import java.net.Inet4Address
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -147,6 +148,24 @@ class MainActivity : Activity() {
         }
         button(col, "Send test typed text to glasses") { withService { it.sendTypedText("Test message from the phone") } }
 
+        header(col, "Sound alerts")
+        col.addView(CheckBox(this).apply {
+            text = "Ring like a call when the glasses flash an alert (Critical and Medium sounds)"
+            isChecked = prefs.alertsEnabled
+            setOnCheckedChangeListener { _, on -> prefs.alertsEnabled = on }
+        })
+        button(col, "Test alert: Doorbell on your right") {
+            withService { it.receiveAlert(testAlert("doorbell", "right", "medium")) }
+        }
+        button(col, "Test alert in 5 s: Smoke alarm (lock the phone now)") {
+            Toast.makeText(this, "Lock the phone now", Toast.LENGTH_SHORT).show()
+            main.postDelayed({ BridgeService.instance?.receiveAlert(testAlert("alarm", "behind", "critical")) }, 5000)
+        }
+        button(col, "End test alert (the sound stopped)") {
+            val id = Alerts.active?.id
+            if (id != null) withService { it.receiveAlert(JSONObject().put("type", "alert").put("id", id).put("active", false)) }
+        }
+
         header(col, "Messages (newest first)")
         logText = TextView(this).apply {
             typeface = Typeface.MONOSPACE
@@ -168,21 +187,19 @@ class MainActivity : Activity() {
         header(col, "Connection")
         val modeGroup = RadioGroup(this)
         val rServer = RadioButton(this).apply { id = View.generateViewId(); text = "Phone hosts the bridge (glasses app connects to the phone)" }
-        val rRelay = RadioButton(this).apply { id = View.generateViewId(); text = "Connect to a laptop relay" }
+        val rRelay = RadioButton(this).apply { id = View.generateViewId(); text = "Connect to a laptop (Earshot server or relay)" }
         modeGroup.addView(rServer); modeGroup.addView(rRelay)
         modeGroup.check(if (prefs.mode == Prefs.MODE_RELAY) rRelay.id else rServer.id)
         col.addView(modeGroup)
         val host = field(col, "Listen address (127.0.0.1 = this phone only, 0.0.0.0 = whole Wi-Fi)", prefs.bindHost)
         val port = field(col, "Port", prefs.port.toString(), InputType.TYPE_CLASS_NUMBER)
-        val relay = field(col, "Relay URL (laptop mode)", prefs.relayUrl, InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI)
-        val volume = field(col, "Raise media volume to at least this % before speaking (0 = don't touch)",
-            prefs.volumePercent.toString(), InputType.TYPE_CLASS_NUMBER)
+        val relay = field(col, "Laptop URL: ws://LAPTOP_IP:8000/ws/pendant for the Earshot server (sound alerts), " +
+            "ws://LAPTOP_IP:8787/phone for relay.mjs", prefs.relayUrl, InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI)
         button(col, "Apply and restart bridge") {
             prefs.mode = if (modeGroup.checkedRadioButtonId == rRelay.id) Prefs.MODE_RELAY else Prefs.MODE_SERVER
             prefs.bindHost = host.text.toString().trim().ifEmpty { "127.0.0.1" }
             prefs.port = port.text.toString().toIntOrNull() ?: Prefs.DEFAULT_PORT
             prefs.relayUrl = relay.text.toString().trim()
-            prefs.volumePercent = volume.text.toString().toIntOrNull() ?: 100
             BridgeService.instance?.restartBridge() ?: BridgeService.start(this)
             Toast.makeText(this, "Bridge restarting", Toast.LENGTH_SHORT).show()
         }
@@ -195,6 +212,12 @@ class MainActivity : Activity() {
         }
         setContentView(scroll)
     }
+
+    /** An alert frame like the glasses send. It is never refreshed, so it times out after 15 s unless ended. */
+    private fun testAlert(label: String, dir: String, tier: String) = JSONObject()
+        .put("v", Protocol.VERSION).put("type", "alert").put("id", "test${System.currentTimeMillis()}")
+        .put("active", true).put("state", if (label == "alarm") "alarm" else "cue")
+        .put("label", label).put("dir", dir).put("tier", tier)
 
     private fun withService(action: (BridgeService) -> Unit) {
         val s = BridgeService.instance
@@ -219,6 +242,8 @@ class MainActivity : Activity() {
             appendLine("Text-to-speech: ${BridgeState.ttsStatus}")
             appendLine("Audio while locked: $audio")
             appendLine("Type screen: ${if (BridgeState.typeScreenOpen) "open" else "closed"}")
+            appendLine("Sound alert: ${Alerts.active?.let { "${it.title} ${it.where} (${it.tier})" } ?: "none"}" +
+                if (prefs.alertsEnabled) "" else " · ringing OFF")
             appendLine("Phone Wi-Fi IP: ${wifiIp() ?: "none"}")
             appendLine("Last in: ${BridgeState.lastIn ?: "-"}")
             append("Last out: ${BridgeState.lastOut ?: "-"}")
@@ -234,7 +259,6 @@ class MainActivity : Activity() {
     private fun checks(): List<Check> {
         val nm = getSystemService(NotificationManager::class.java)
         val pm = getSystemService(PowerManager::class.java)
-        val am = getSystemService(AudioManager::class.java)
         val notifPerm = checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         val list = mutableListOf<Check>()
 
@@ -248,7 +272,10 @@ class MainActivity : Activity() {
         val typeCh = nm.getNotificationChannel(Notifications.CHANNEL_TYPE)
         list += Check("Type-screen alerts on", typeCh != null && typeCh.importance >= NotificationManager.IMPORTANCE_HIGH,
             "", "Open") { openChannel(Notifications.CHANNEL_TYPE) }
-        list += Check("Full-screen page over lock screen", nm.canUseFullScreenIntent(), "", "Allow") {
+        val alertCh = nm.getNotificationChannel(Notifications.CHANNEL_ALERT)
+        list += Check("Sound-alert calls on", alertCh != null && alertCh.importance >= NotificationManager.IMPORTANCE_HIGH,
+            "rings when the glasses flash", "Open") { openChannel(Notifications.CHANNEL_ALERT) }
+        list += Check("Full-screen page over lock screen", nm.canUseFullScreenIntent(), "type page and sound alerts", "Allow") {
             openSettings(Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:$packageName")))
         }
         list += Check("Battery: unrestricted", pm.isIgnoringBatteryOptimizations(packageName),
@@ -266,12 +293,6 @@ class MainActivity : Activity() {
         }
         list += Check("Service running, audio allowed", BridgeState.serviceRunning && BridgeState.audioAllowed != false,
             "", "Start") { BridgeService.start(this) }
-        val vol = am.getStreamVolume(AudioManager.STREAM_MUSIC)
-        val max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        list += Check("Media volume loud ($vol/$max)", vol * 10 >= max * 7, "raised automatically when speaking", "Max") {
-            am.setStreamVolume(AudioManager.STREAM_MUSIC, max, AudioManager.FLAG_SHOW_UI)
-            render()
-        }
         return list
     }
 

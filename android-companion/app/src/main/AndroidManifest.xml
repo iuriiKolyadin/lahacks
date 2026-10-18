@@ -16,9 +16,8 @@
     <!-- Notifications, and the lock-screen "please type" page. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
-
-    <!-- Turn media volume up before speaking. -->
-    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- The sound-alert page vibrates like a ringing phone. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <queries>
         <intent>
@@ -56,13 +55,24 @@
             android:turnScreenOn="true"
             android:windowSoftInputMode="stateAlwaysVisible|adjustResize" />
 
+        <!-- "Incoming call" for a sound the glasses are flashing, with reply buttons. Over the lock screen too. -->
+        <activity
+            android:name=".AlertActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:taskAffinity="com.earshot.companion.alert"
+            android:theme="@style/Theme.Earshot.Type"
+            android:turnScreenOn="true" />
+
         <service
             android:name=".BridgeService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Accessibility bridge: speaks replies a deaf user picks on smart glasses and shows a type-to-me page." />
+                android:value="Accessibility bridge: speaks replies a deaf user picks on smart glasses or the phone, shows a type-to-me page, and rings when the glasses detect an urgent sound." />
         </service>
     </application>
 </manifest>

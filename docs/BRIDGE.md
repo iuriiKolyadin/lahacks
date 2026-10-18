@@ -37,6 +37,14 @@ const ws = new WebSocket('ws://127.0.0.1:8765');
 Messages are identical in both modes. The relay forwards frames unchanged
 and only adds an `error` with `code: "no_phone"` if no phone is connected.
 
+**Through the Earshot server (sound alerts).** The plugin already streams to
+`server/main.py`, which relays `say` and `alert` frames unchanged to
+`/ws/pendant`. On the companion: **Connection → Connect to a laptop**, URL
+`ws://SERVER_IP:8000/ws/pendant`, **Apply**, allow **Local network**. Works
+whether the Android phone is the Even phone or a separate pendant. The server
+ignores what the phone sends back, so `typed_text` does not reach the glasses
+this way.
+
 ## 2. Envelope
 
 ```json
@@ -59,6 +67,7 @@ and only adds an `error` with `code: "no_phone"` if no phone is connected.
 | `show_type_screen` | | wakes the phone and shows "I'm Deaf. Please type here" over the lock screen | `ack` |
 | `hide_type_screen` | | closes the type page | `ack` |
 | `get_status` | | nothing | `status` |
+| `alert` | `id`, `active`, and while active `label`, `text`, `dir`, `tier`, `state` | rings like an incoming call; see 3a | none |
 
 Reply ids (texts are editable on the phone; the ids never change):
 
@@ -71,6 +80,37 @@ Reply ids (texts are editable on the phone; the ids never change):
 Also accepted: `deaf_intro` and `type` → `type_it`, `thank_you` → `thanks`,
 `"1"`/`"2"`/`"3"` → the three in order. The PLAN.md frame
 `{"t":"say","phrase":"repeat"}` also works and behaves like `speak`.
+
+### 3a. Sound alerts
+
+The plugin (`plugin/src/alerts.ts`) sends `alert` whenever the glasses are
+flashing a sound at a tier that keeps flashing: **critical** or **medium**.
+Normal blinks twice and stays on the glasses only. The wearer sets each
+sound's tier on the plugin page, so that one setting decides both.
+
+```json
+{"v":1,"type":"alert","id":"a1760745600123-1","active":true,"state":"cue","label":"doorbell",
+ "text":"Doorbell","dir":"right","tier":"medium","ts":1760745600123}
+{"v":1,"type":"alert","id":"a1760745600123-1","active":false,"ts":1760745604123}
+```
+
+- `id`: one per sound. The same sound changing `dir` keeps its id (the phone
+  updates silently); a different sound gets a new id and replaces the old one
+  (the phone rings again). No `active:false` is sent for a replaced alert.
+- While active, the frame is resent every 5 s. The phone ends an alert 15 s
+  after the last frame, so a dropped link cannot ring forever. The server
+  replays an active alert (under 10 s old) to a phone that connects late.
+- `label`: `alarm`, `siren`, `name`, `doorbell`, `knock`, `horn`, `dog`, `clap`,
+  `snap`, `speech`. `text` is the display name; the phone has a fallback.
+- `dir`: as in PLAN.md section 3. `tier`: `critical` or `medium`.
+
+What the phone does: a call-style notification (the sound is the caller;
+**Answer** opens the reply page, **Decline** dismisses), and when locked or the
+screen is off, a full-screen page over the lock screen. The page flashes and
+vibrates at the tier's rhythm until the wearer presses a reply or the sound
+stops. Each reply button speaks that phrase, exactly like `speak`; "Please type"
+also opens the type page. Dismiss stops the phone ringing for that `id` only;
+the glasses are not told. No reply is sent.
 
 ## 4. Phone → glasses
 
@@ -128,6 +168,8 @@ export function speakReply(reply: 'type_it' | 'repeat' | 'thanks') {
 
 - Without the glasses app: `node android-companion/tools/bridge-client.mjs ping`
   (or open `android-companion/tools/test-client.html`) with the phone plugged in over USB.
+  `bridge-client.mjs alert doorbell right medium` rings the phone until Ctrl+C.
+- Alerts through the server without glasses: `python server/fake_glasses.py --alert siren --alert-tier critical --seconds 20`.
 - Without the phone: run `node android-companion/tools/relay.mjs` and point the glasses
   app at `ws://LAPTOP_IP:8787/glasses`. The relay logs every frame you send.
 

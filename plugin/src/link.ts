@@ -2,6 +2,7 @@
 //
 // Up:   one frame per glasses audio event
 //       {"t":"audio","pcm":<base64 int16 LE>,"direction":int|null,"speakerRole":"self"|"other"|"unknown","ts":ms}
+//       plus "alert" frames for the phone (alerts.ts), which the server relays to /ws/pendant
 // Down: one frame per HUD state change
 //       {"state","label","dir","ttl_ms","level"}
 //
@@ -22,6 +23,8 @@ export type LinkStatus = 'connecting' | 'open' | 'closed'
 
 export interface Link {
   sendAudio(audio: AudioEvent): void
+  /** Send one JSON frame now. False (and dropped) if the socket is not open. */
+  send(frame: object): boolean
   /** Drop the current socket (if any) and connect again now. */
   reconnect(): void
   close(): void
@@ -95,6 +98,11 @@ export function startLink(
           ts: Date.now(),
         }),
       )
+    },
+    send(frame) {
+      if (ws?.readyState !== WebSocket.OPEN) return false
+      ws.send(JSON.stringify(frame))
+      return true
     },
     reconnect() {
       const old = ws

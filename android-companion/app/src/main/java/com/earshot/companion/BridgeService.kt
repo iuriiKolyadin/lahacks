@@ -24,7 +24,12 @@ class BridgeService : Service(), TransportListener {
         const val ACTION_SPEAK = "com.earshot.companion.SPEAK"
         const val ACTION_SHOW_TYPE = "com.earshot.companion.SHOW_TYPE"
         const val ACTION_STOP = "com.earshot.companion.STOP"
+        const val ACTION_DISMISS_ALERT = "com.earshot.companion.DISMISS_ALERT"
         const val EXTRA_REPLY = "reply"
+        const val EXTRA_ALERT_ID = "alert_id"
+
+        /** The glasses resend an active alert every 5 s; this long without one, it is treated as over. */
+        private const val ALERT_TIMEOUT_MS = 15_000L
 
         @Volatile var instance: BridgeService? = null
             private set
@@ -47,6 +52,9 @@ class BridgeService : Service(), TransportListener {
     private var wakeLock: PowerManager.WakeLock? = null
     private var nextTypedId = 1
     private var typingPending: String? = null
+    private val alertTimeout = Runnable {
+        Alerts.active?.let { endAlert(it.id, "no update from the glasses for ${ALERT_TIMEOUT_MS / 1000} s") }
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -58,7 +66,6 @@ class BridgeService : Service(), TransportListener {
         BridgeState.serviceRunning = true
         BridgeState.log("SYS", "service started")
         speaker = Speaker(this) { refresh() }
-        speaker.volumePercent = prefs.volumePercent
         speaker.prepare(phraseTexts())
         // Keep the CPU awake so frames are handled promptly while the screen is off.
         wakeLock = getSystemService(PowerManager::class.java)
@@ -74,12 +81,16 @@ class BridgeService : Service(), TransportListener {
             ACTION_STOP -> { stopSelf(); return START_NOT_STICKY }
             ACTION_SPEAK -> speakReply(intent.getStringExtra(EXTRA_REPLY), null, null, source = "notification")
             ACTION_SHOW_TYPE -> showTypeScreen()
+            ACTION_DISMISS_ALERT -> dismissAlert(intent.getStringExtra(EXTRA_ALERT_ID))
         }
         return START_STICKY
     }
 
     override fun onDestroy() {
         BridgeState.log("SYS", "service stopped")
+        main.removeCallbacks(alertTimeout)
+        Alerts.active = null
+        Notifications.cancelAlert(this)
         val t = transport
         transport = null
         io.execute { t?.shutdown() }
@@ -126,10 +137,7 @@ class BridgeService : Service(), TransportListener {
 
     // ---- Bridge transport ----
 
-    fun restartBridge() {
-        speaker.volumePercent = prefs.volumePercent
-        startBridge()
-    }
+    fun restartBridge() = startBridge()
 
     private fun startBridge() {
         val old = transport
@@ -209,6 +217,8 @@ class BridgeService : Service(), TransportListener {
             }
             "show_type_screen" -> { showTypeScreen(); send(reply, Protocol.ack(id, "show_type_screen")) }
             "hide_type_screen" -> { hideTypeScreen(); send(reply, Protocol.ack(id, "hide_type_screen")) }
+            // No reply: it is resent every 5 s, and through the server nobody reads replies.
+            "alert" -> receiveAlert(msg)
             // Our own message types echoed back by a relay, or replies from the other side: ignore.
             "pong", "ack", "status", "welcome", "spoken", "error", "typed_text", "typing" -> {}
             "" -> send(reply, Protocol.error(id, "missing_field", "Frame has no \"type\""))
@@ -276,5 +286,55 @@ class BridgeService : Service(), TransportListener {
     fun onPhrasesChanged() {
         speaker.prepare(phraseTexts())
         refresh()
+    }
+
+    // ---- Sound alerts: the glasses are flashing something, so ring like a call ----
+
+    /** Handle an "alert" frame (docs/BRIDGE.md). Also called by the debug panel's test buttons. */
+    fun receiveAlert(msg: JSONObject) {
+        val id = msg.optString("id").ifEmpty { "alert" }
+        if (!msg.optBoolean("active", true)) {
+            endAlert(id, "sound stopped")
+            return
+        }
+        main.removeCallbacks(alertTimeout)
+        main.postDelayed(alertTimeout, ALERT_TIMEOUT_MS)
+        val alert = Alert.from(msg)
+        val prev = Alerts.active
+        if (alert == prev) return // a refresh with nothing new
+        val isNew = prev?.id != alert.id
+        Alerts.active = alert
+        Alerts.latest = alert
+        if (isNew) BridgeState.log("SYS", "alert: ${alert.title} ${alert.where} (${alert.tier})")
+        if (prefs.alertsEnabled && alert.id != Alerts.dismissedId) {
+            // A new sound rings again; the same sound moving only updates the notification.
+            Notifications.postAlert(this, alert, ring = isNew)
+            if (isNew && App.uiVisible) {
+                // One of our screens is in front, so the full-screen intent would only show a heads-up.
+                startActivity(Intent(this, AlertActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }
+        }
+        BridgeState.changed()
+    }
+
+    private fun endAlert(id: String, why: String) {
+        val alert = Alerts.active ?: return
+        if (alert.id != id) return // the end of an alert a newer one already replaced
+        main.removeCallbacks(alertTimeout)
+        Alerts.active = null
+        Notifications.cancelAlert(this)
+        BridgeState.log("SYS", "alert ended: ${alert.title} ($why)")
+        BridgeState.changed()
+    }
+
+    /** The wearer dismissed the alert on the phone. Only the phone stops ringing; the glasses keep showing it. */
+    fun dismissAlert(id: String?) {
+        val alert = Alerts.latest ?: return
+        if (id != null && alert.id != id) return
+        Alerts.dismissedId = alert.id
+        Notifications.cancelAlert(this)
+        AlertActivity.current?.finish()
+        BridgeState.log("SYS", "alert dismissed on the phone: ${alert.title}")
+        BridgeState.changed()
     }
 }

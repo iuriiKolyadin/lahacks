@@ -6,13 +6,20 @@ import {
 } from '@evenrealities/even_hub_sdk'
 import { startLink, serverUrl, type Link } from './link'
 import { createHud, DEMO_STATES } from './hud'
+import { createAlertFeed } from './alerts'
 import { mountUi, setStatus, setHud, setMic } from './ui'
 
 mountUi()
 
 const bridge = await waitForEvenAppBridge()
 
-const hud = createHud(bridge, (lines, tier) => setHud(lines.length ? lines.join(' / ') : '(blank)', tier))
+// Whatever flashes on the glasses also rings the companion phone, through the server.
+const alerts = createAlertFeed(frame => link?.send(frame))
+
+const hud = createHud(bridge, (lines, tier, state) => {
+  setHud(lines.length ? lines.join(' / ') : '(blank)', tier)
+  alerts.update(state, tier)
+})
 
 const created = await bridge.createStartUpPageContainer(
   new CreateStartUpPageContainer({ containerTotalNum: 1, textObject: [hud.container] }),
@@ -37,7 +44,10 @@ if (demo) {
 } else {
   const url = serverUrl()
   link = startLink(url, hud.render, status => {
-    if (status === 'open') setStatus('listening', `Connected · ${url}`)
+    if (status === 'open') {
+      setStatus('listening', `Connected · ${url}`)
+      alerts.resend() // anything sent while the socket was down was dropped
+    }
     else if (status === 'connecting') setStatus('connecting', `Connecting · ${url}`)
     else setStatus('error', `Disconnected, retrying · ${url}`)
   })
@@ -78,6 +88,7 @@ function cleanup() {
   if (cleanedUp) return
   cleanedUp = true
   bridge.audioControl(false)
+  alerts.close() // before the socket closes, so the phone stops ringing
   link?.close()
   if (demoTimer !== null) clearInterval(demoTimer)
   clearInterval(statsTimer)

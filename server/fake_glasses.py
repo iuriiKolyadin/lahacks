@@ -3,6 +3,13 @@ time, in the PRD.md section 5 format, and prints every HUD state it gets back.
 
     python fake_glasses.py --wav clips/doorbell_1.wav
     python fake_glasses.py                      # silence, forever
+<<<<<<< Updated upstream
+=======
+    python fake_glasses.py --say repeat         # also send one say frame
+    python fake_glasses.py --alert doorbell --seconds 20
+                                                # ring the companion like the plugin does: alert
+                                                # every 5 s, cleared when this stops
+>>>>>>> Stashed changes
     python fake_glasses.py --seconds 20         # stop after 20 s
     python fake_glasses.py --role self          # mark audio as the wearer's own voice
     python fake_glasses.py --wav ../plugin/recordings/alarm_1.wav --jsonl ../plugin/recordings/alarm_1.jsonl
@@ -53,6 +60,27 @@ async def run(args):
                 print(f"{time.time() - t0:6.2f}s  STATE {msg}")
 
         read = asyncio.create_task(reader())
+<<<<<<< Updated upstream
+=======
+        if args.say:
+            await ws.send(json.dumps({"t": "say", "phrase": args.say}))
+            print("sent say", args.say)
+        alert = None
+        if args.alert:
+            alert = {
+                "v": 1, "type": "alert", "id": f"a{int(time.time() * 1000)}", "active": True,
+                "state": "alarm" if args.alert in ("alarm", "siren") else "cue", "label": args.alert,
+                "dir": args.alert_dir, "tier": args.alert_tier,
+            }
+
+            async def ring():
+                while True:
+                    await ws.send(json.dumps(alert | {"ts": int(time.time() * 1000)}))
+                    await asyncio.sleep(5)
+
+            ringer = asyncio.create_task(ring())
+            print("alert", args.alert, args.alert_dir, args.alert_tier, "(resent every 5 s)")
+>>>>>>> Stashed changes
         meta, chunk = [], CHUNK
         if args.jsonl:
             meta = [json.loads(l) for l in open(args.jsonl) if l.strip()]
@@ -72,6 +100,11 @@ async def run(args):
             await ws.send(json.dumps(frame))
             # pace to real time against the start, so drift does not build up
             await asyncio.sleep(max(0.0, start + (n + 1) * chunk / RATE - time.time()))
+        if alert:
+            ringer.cancel()
+            await ws.send(json.dumps({"v": 1, "type": "alert", "id": alert["id"], "active": False,
+                                      "ts": int(time.time() * 1000)}))
+            print("alert cleared")
         await asyncio.sleep(1)
         read.cancel()
 
@@ -81,6 +114,14 @@ def main():
     ap.add_argument("--url", default="ws://localhost:8000/ws/glasses")
     ap.add_argument("--wav")
     ap.add_argument("--loop", action="store_true", help="repeat the WAV forever")
+<<<<<<< Updated upstream
+=======
+    ap.add_argument("--say", choices=["deaf_intro", "repeat", "type_it"])
+    ap.add_argument("--alert", choices=["alarm", "siren", "name", "doorbell", "knock", "horn", "dog"],
+                    help="also ring the companion phone with this sound until the run ends")
+    ap.add_argument("--alert-dir", default="right", choices=["left", "right", "front", "behind", "center", "near"])
+    ap.add_argument("--alert-tier", default="medium", choices=["critical", "medium"])
+>>>>>>> Stashed changes
     ap.add_argument("--role", default="other", choices=["self", "other", "unknown"])
     ap.add_argument("--direction", type=int, default=None)
     ap.add_argument("--seconds", type=float, help="stop after this long")

@@ -39,7 +39,10 @@ object Phrases {
 class Prefs(context: Context) {
     private val sp = context.getSharedPreferences("earshot", Context.MODE_PRIVATE)
 
-    /** "server": the phone hosts the WebSocket server. "relay": the phone connects out to a laptop relay. */
+    /**
+     * "server": the phone hosts the WebSocket server. "relay": the phone connects out to a
+     * laptop: tools/relay.mjs, or the Earshot server's /ws/pendant (which also sends sound alerts).
+     */
     var mode: String
         get() = sp.getString("mode", MODE_SERVER) ?: MODE_SERVER
         set(v) = sp.edit().putString("mode", v).apply()
@@ -57,10 +60,10 @@ class Prefs(context: Context) {
         get() = sp.getString("relay_url", "ws://192.168.1.10:8787/phone") ?: ""
         set(v) = sp.edit().putString("relay_url", v).apply()
 
-    /** Media volume is raised to at least this percentage before speaking. 0 = leave volume alone. */
-    var volumePercent: Int
-        get() = sp.getInt("volume_percent", 100)
-        set(v) = sp.edit().putInt("volume_percent", v.coerceIn(0, 100)).apply()
+    /** Ring like an incoming call when the glasses flash an alert. */
+    var alertsEnabled: Boolean
+        get() = sp.getBoolean("alerts_enabled", true)
+        set(v) = sp.edit().putBoolean("alerts_enabled", v).apply()
 
     fun phraseText(p: Phrase): String = sp.getString("phrase_${p.id}", null) ?: p.defaultText
 

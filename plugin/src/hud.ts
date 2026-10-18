@@ -144,7 +144,7 @@ export interface Hud {
 
 export function createHud(
   bridge: EvenAppBridge,
-  onShow: (lines: string[], tier: Tier) => void = () => {},
+  onShow: (lines: string[], tier: Tier, state: HudState) => void = () => {},
 ): Hud {
   const container = new TextContainerProperty({
     xPosition: 0,
@@ -220,7 +220,7 @@ export function createHud(
         }
       }, ms)
     }
-    onShow(lines, tier)
+    onShow(lines, tier, current)
     schedule()
   }
 

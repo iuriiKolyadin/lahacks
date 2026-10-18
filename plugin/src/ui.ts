@@ -1,13 +1,8 @@
-import { LABELS, LOCKED, setTier, tierOf, onTiersChanged, type Tier } from './settings'
+import { LABELS, LABEL_NAMES, LOCKED, setTier, tierOf, onTiersChanged, type Tier } from './settings'
 
 type Status = 'connecting' | 'listening' | 'paused' | 'error'
 
 const TIER_NAMES: Record<Tier, string> = { critical: 'Critical', medium: 'Medium', normal: 'Normal' }
-const LABEL_NAMES: Record<string, string> = {
-  alarm: 'Smoke / fire alarm', siren: 'Siren', name: 'Your name', doorbell: 'Doorbell',
-  knock: 'Knock', horn: 'Car horn', dog: 'Dog bark', clap: 'Clapping', snap: 'Finger snap',
-  speech: 'Someone talking',
-}
 
 let statusEl: HTMLDivElement
 let hudEl: HTMLDivElement
@@ -29,7 +24,7 @@ export function mountUi() {
       </section>
       <section class="tiers">
         <div class="label">Alert levels</div>
-        <p class="hint">Critical shows spaced capitals in a frame and flashes fast. Medium shows capitals and flashes slowly. Normal is dimmer and blinks twice.</p>
+        <p class="hint">Critical shows spaced capitals in a frame and flashes fast. Medium shows capitals and flashes slowly. Normal is dimmer and blinks twice. Critical and Medium also ring the Earshot Companion phone like a call.</p>
         <div id="tier-rows"></div>
       </section>
       <footer>Double-tap the glasses temple to exit.</footer>
