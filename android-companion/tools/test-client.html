@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Earshot Bridge Tester</title>
+<style>
+  :root { --bg:#fafafa; --fg:#111; --muted:#666; --card:#fff; --line:#ddd; --accent:#f5b800; --in:#0a6; --out:#06c; --err:#c22; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#121212; --fg:#eee; --muted:#999; --card:#1e1e1e; --line:#333; --in:#4c9; --out:#6af; --err:#f66; } }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.4 system-ui, sans-serif; }
+  main { max-width:820px; margin:0 auto; padding:16px; }
+  h1 { font-size:22px; margin:4px 0 12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:12px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  input, textarea { font:inherit; padding:8px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--fg); }
+  input#url { flex:1; min-width:220px; }
+  textarea { width:100%; box-sizing:border-box; font-family:ui-monospace, monospace; font-size:13px; }
+  button { font:inherit; padding:8px 12px; border-radius:6px; border:1px solid var(--line); background:var(--card); color:var(--fg); cursor:pointer; }
+  button.primary { background:var(--accent); color:#000; border-color:var(--accent); font-weight:600; }
+  #state { font-weight:600; }
+  #typed { font-size:26px; font-weight:600; min-height:1.4em; }
+  #typing { color:var(--muted); min-height:1.4em; }
+  #log { font:12px/1.5 ui-monospace, monospace; white-space:pre-wrap; word-break:break-all; max-height:45vh; overflow:auto; }
+  .IN { color:var(--in); } .OUT { color:var(--out); } .ERR { color:var(--err); } .SYS { color:var(--muted); }
+  .hint { color:var(--muted); font-size:13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Earshot bridge tester</h1>
+  <div class="card">
+    <div class="row">
+      <input id="url" value="ws://127.0.0.1:8765" aria-label="Bridge URL">
+      <button class="primary" id="connect">Connect</button>
+      <span id="state">disconnected</span>
+    </div>
+    <p class="hint">Phone over USB: run <code>adb forward tcp:8765 tcp:8765</code> first, then use ws://127.0.0.1:8765.
+      Through the laptop relay: ws://127.0.0.1:8787/glasses.</p>
+  </div>
+  <div class="card">
+    <div class="row">
+      <button data-send='{"type":"ping"}'>Ping</button>
+      <button data-send='{"type":"hello"}'>Hello</button>
+      <button data-send='{"type":"get_status"}'>Status</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button data-send='{"type":"speak","reply":"type_it"}'>Speak: Please type</button>
+      <button data-send='{"type":"speak","reply":"repeat"}'>Speak: Repeat</button>
+      <button data-send='{"type":"speak","reply":"thanks"}'>Speak: Thanks</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button data-send='{"type":"show_type_screen"}'>Show type screen</button>
+      <button data-send='{"type":"hide_type_screen"}'>Hide type screen</button>
+      <button data-send='{"t":"say","phrase":"repeat"}'>Legacy {"t":"say"}</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="hint">Typed on the phone:</div>
+    <div id="typed"></div>
+    <div id="typing"></div>
+  </div>
+  <div class="card">
+    <textarea id="raw" rows="2">{"v":1,"type":"speak","text":"Hello from the laptop"}</textarea>
+    <div class="row" style="margin-top:6px"><button id="sendRaw">Send JSON</button><button id="clear">Clear log</button></div>
+  </div>
+  <div class="card"><div id="log"></div></div>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id);
+  let ws = null, n = 1;
+  const sentAt = new Map();
+
+  function log(kind, text) {
+    const line = document.createElement('div');
+    line.className = kind;
+    line.textContent = `${new Date().toTimeString().slice(0, 8)} ${kind.padEnd(3)} ${text}`;
+    $('log').prepend(line);
+  }
+
+  function connect() {
+    if (ws) { ws.close(); return; }
+    const url = $('url').value.trim();
+    try { localStorage.setItem('earshot-url', url); } catch {}
+    $('state').textContent = 'connecting…';
+    ws = new WebSocket(url);
+    ws.onopen = () => { $('state').textContent = 'connected'; $('connect').textContent = 'Disconnect'; log('SYS', `connected to ${url}`); };
+    ws.onclose = (e) => { $('state').textContent = 'disconnected'; $('connect').textContent = 'Connect'; log('SYS', `closed (code ${e.code})`); ws = null; };
+    ws.onerror = () => log('ERR', `cannot reach ${url}`);
+    ws.onmessage = (e) => {
+      let m; try { m = JSON.parse(e.data); } catch { log('IN', e.data); return; }
+      if (m.type === 'typing') { $('typing').textContent = m.text ? `typing: ${m.text}` : ''; return; }
+      if (m.type === 'typed_text') { $('typed').textContent = `“${m.text}”`; $('typing').textContent = ''; }
+      const rtt = m.ref && sentAt.has(m.ref) ? `  (${Date.now() - sentAt.get(m.ref)} ms)` : '';
+      log(m.type === 'error' ? 'ERR' : 'IN', e.data + rtt);
+    };
+  }
+
+  function send(obj) {
+    if (!ws || ws.readyState !== 1) { log('ERR', 'not connected'); return; }
+    if (obj.t === undefined) { obj = { v: 1, id: `w${n++}`, ...obj }; sentAt.set(obj.id, Date.now()); }
+    if (obj.type === 'ping') obj.ts = Date.now();
+    const s = JSON.stringify(obj);
+    ws.send(s);
+    log('OUT', s);
+  }
+
+  try { const u = localStorage.getItem('earshot-url'); if (u) $('url').value = u; } catch {}
+  $('connect').onclick = connect;
+  document.querySelectorAll('[data-send]').forEach((b) => b.onclick = () => send(JSON.parse(b.dataset.send)));
+  $('sendRaw').onclick = () => { try { send(JSON.parse($('raw').value)); } catch (e) { log('ERR', `bad JSON: ${e.message}`); } };
+  $('clear').onclick = () => { $('log').textContent = ''; };
+</script>
+</body>
+</html>
