@@ -41,7 +41,7 @@ class Prefs(context: Context) {
 
     /**
      * "server": the phone hosts the WebSocket server. "relay": the phone connects out to a
-     * laptop: tools/relay.mjs, or the Earshot server's /ws/pendant (which also sends sound alerts).
+     * laptop: tools/relay.mjs, or the Cue server's /ws/pendant (which also sends sound alerts).
      */
     var mode: String
         get() = sp.getString("mode", MODE_SERVER) ?: MODE_SERVER

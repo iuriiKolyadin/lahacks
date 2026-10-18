@@ -1,4 +1,4 @@
-"""Earshot hub: glasses <-> iPhone classifier.
+"""Cue hub: glasses <-> iPhone classifier.
 
     python main.py              # real: needs the plugin and a classifier on /ws/classifier
     python main.py --classify   # real, and runs YAMNet on this computer: no iPhone needed
@@ -406,7 +406,7 @@ def main():
         uvicorn.run(app, host=args.host, port=args.port, **opts)
         return
     socks = listen_sockets(args.port)
-    log(f"Earshot hub ({'mock' if args.mock else 'live'}) on port {args.port}. Point the devices at:")
+    log(f"Cue hub ({'mock' if args.mock else 'live'}) on port {args.port}. Point the devices at:")
     for base in lan_urls(args.port):
         log(f"  plugin {base}/ws/glasses    companion {base}/ws/pendant"
             + ("" if args.classify else f"    iPhone {base}/ws/classifier"))

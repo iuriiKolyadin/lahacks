@@ -36,9 +36,9 @@ from, then the display goes blank again.
 - Direction comes from the glasses themselves. Left and right work. Front
   and behind cannot be told apart and are drawn as "center".
 - The wearer picks which sounds to see and an alert tier for each (off,
-  normal, medium, critical), on the glasses (long-press opens the menu, swipe
-  moves, tap cycles, long-press or DONE saves, double-tap cancels) or on the
-  phone page. Alarm and siren are locked on at critical.
+  normal, medium, critical), on the glasses (tap opens the menu, swipe
+  moves, tap cycles, DONE saves, double-tap cancels) or on the phone page.
+  Alarm and siren are locked on at critical.
 - An Android companion app answers for the wearer. When the glasses flash a
   critical or medium sound, the phone rings like an incoming call and shows
   the sound, its direction, and one button per reply. A button speaks the
@@ -156,8 +156,10 @@ more often than not; the glasses cannot tell front from behind.
 - Name detection. Planned as a Picovoice keyword spotter; first on the cut
   list and cut at the 11 pm checkpoint.
 - A phrase picker on the glasses themselves (swipe to choose, long-press to
-  speak). The replies live on the companion phone's alert page instead; the
-  glasses stay output-only.
+  speak). The replies live on the companion phone's alert page instead. The
+  glasses do have a menu, for sounds and levels, opened with a single tap;
+  a long-press on the G2 touchpad opens Even AI before any plugin sees it,
+  so it could not be the way in.
 - External microphones or an ESP32 direction node. Not needed once the
   glasses' own direction tag turned out to carry data.
 - A camera. The G2 has none and the product does not need one.
@@ -181,6 +183,7 @@ more often than not; the glasses cannot tell front from behind.
 | Sun 09:15 | demo is siren, dog bark, clap | the sounds that detect every time through the glasses, and a clap is one the judge can make |
 | Sun 09:30 | Android companion lands: call-style alerts, spoken replies, type-here page | built overnight by Iurii; the "answer for me" half arrives through the phone rather than a glasses phrase picker |
 | Sun 09:40 | renamed Earshot to Cue | shorter, and it is what the glasses do: give you the cue |
+| Sun 09:25 | the on-glasses sound menu opens with a tap, not a long-press | a long-press on the touchpad opens Even AI before the plugin sees it |
 
 ## 9. Known limitations
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Test client for the Earshot bridge. Pretends to be the glasses app.
+// Test client for the Cue bridge. Pretends to be the glasses app.
 // Needs Node 22+ (built-in WebSocket). No npm install needed.
 //
 //   node tools/bridge-client.mjs ping

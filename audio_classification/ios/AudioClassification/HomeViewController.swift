@@ -28,14 +28,14 @@ class HomeViewController: UIViewController {
 
   private var modelType: ModelType = .Yamnet
   private var overLap = 0.5
-  // Earshot: the laptop hub applies its own per-label thresholds, so send it the top 10 unfiltered.
+  // Cue: the laptop hub applies its own per-label thresholds, so send it the top 10 unfiltered.
   private var maxResults = 10
   private var threshold: Float = 0.0
   private var threadCount = 2
 
   private var audioClassificationHelper: AudioClassificationHelper?
 
-  // MARK: - Earshot
+  // MARK: - Cue
 
   private let defaults = UserDefaults.standard
   private var inputSource: InputSource {
@@ -64,7 +64,7 @@ class HomeViewController: UIViewController {
       model: modelType, overLab: overLap, maxResult: maxResults, threshold: threshold,
       threads: threadCount)
     inferenceView.delegate = self
-    // Earshot runs plugged in on a table; the socket dies if the phone locks.
+    // Cue runs plugged in on a table; the socket dies if the phone locks.
     UIApplication.shared.isIdleTimerDisabled = true
     setUpStatusHeader()
     NotificationCenter.default.addObserver(
@@ -108,7 +108,7 @@ class HomeViewController: UIViewController {
 
   @objc private func showSettings() {
     let alert = UIAlertController(
-      title: "Earshot", message: "Laptop hub address (ws://LAPTOP_IP:8000/ws/classifier)",
+      title: "Cue", message: "Laptop hub address (ws://LAPTOP_IP:8000/ws/classifier)",
       preferredStyle: .alert)
     alert.addTextField { field in
       field.text = self.serverURL

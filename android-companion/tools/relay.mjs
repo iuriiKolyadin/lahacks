@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Laptop relay for the Earshot bridge, for when the Even app's web view
+// Laptop relay for the Cue bridge, for when the Even app's web view
 // cannot reach 127.0.0.1 on the phone.
 //
 //   cd android-companion/tools && npm install && node relay.mjs [--port 8787]

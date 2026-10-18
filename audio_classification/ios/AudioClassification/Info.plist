@@ -11,6 +11,6 @@
 		<true/>
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Earshot receives the glasses' audio from the laptop on this network and sends back what it hears.</string>
+	<string>Cue receives the glasses' audio from the laptop on this network and sends back what it hears.</string>
 </dict>
 </plist>

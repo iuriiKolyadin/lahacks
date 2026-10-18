@@ -1,4 +1,4 @@
-// WebSocket link to the Earshot server (PRD.md section 5).
+// WebSocket link to the Cue server (PRD.md section 5).
 //
 // Up:   one frame per glasses audio event
 //       {"t":"audio","pcm":<base64 int16 LE>,"direction":int|null,"speakerRole":"self"|"other"|"unknown","ts":ms}

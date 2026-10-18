@@ -2,7 +2,7 @@
   "name": "earshot-bridge-tools",
   "private": true,
   "type": "module",
-  "description": "Test client and laptop relay for the Earshot companion bridge",
+  "description": "Test client and laptop relay for the Cue companion bridge",
   "scripts": {
     "relay": "node relay.mjs",
     "client": "node bridge-client.mjs"

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Receives the G2 glasses' audio from the Earshot laptop hub and sends YAMNet results back.
+/// Receives the G2 glasses' audio from the Cue laptop hub and sends YAMNet results back.
 ///
 /// Down: {"t":"audio","pcm":"<base64 int16 LE, 16 kHz mono>","ts":<ms>, ...}, forwarded unchanged
 ///       from the plugin.

@@ -1,4 +1,4 @@
-// Tells the Earshot Companion phone when the glasses are flashing an alert, so
+// Tells the Cue Companion phone when the glasses are flashing an alert, so
 // the phone can ring like an incoming call and offer the wearer's spoken replies.
 //
 // Only tiers that keep flashing ring the phone: critical and medium. Normal
