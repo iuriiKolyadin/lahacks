@@ -23,6 +23,8 @@ build/
 # Logs and recordings
 *.log
 npm-debug.log*
+# server --dump output (read with tools/dirtest.py)
+server/*.jsonl
 
 # OS / editor
 .DS_Store
