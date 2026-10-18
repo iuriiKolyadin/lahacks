@@ -15,7 +15,7 @@ back from judging (away 6 to 9).
 |---|---|---|---|
 | Glasses app | Wendy | `plugin/` | it ships with a 30 line fake server |
 | Listening server | Nikhil | `server/` | it has a mock mode and takes WAV files |
-| Direction node | Iurii | `firmware/` | it posts to a tiny receiver script in its own folder |
+| Pendant speaker app | Iurii | `pendant/` | it listens on a socket that a 10 line script in its folder can drive |
 | Evals and submission | Dara | `tools/`, `docs/`, Devpost | its scripts read the same formats and run on saved files |
 
 Git: everyone on `main`, small commits, `git pull --rebase` before pushing.
@@ -35,7 +35,8 @@ Words used below:
 - Porcupine: Picovoice's keyword spotter. Trained on one word (the demo name). Runs offline.
 - LAPTOP_IP: Nikhil's laptop address on the hotspot, for example `172.20.10.3`. Used only at integration.
 - Beta group: how Even distributes a test build. Upload the `.ehpk` to the developer portal, assign it to a group containing your email, install from the phone.
-- Tier 0: direction from the glasses' own `direction` field, no extra hardware.
+- Tier 0: direction from the glasses' own `direction` field. If it does not carry data, we ship without the arrow.
+- Pendant: an Android phone worn on a lanyard, running Iurii's app, that speaks for the wearer. The G2 has no speaker.
 
 ## 2. The pieces
 
@@ -50,10 +51,11 @@ Words used below:
                               ▼
                         server/    Nikhil
                         YAMNet sound class, Porcupine name, state machine, direction in
-                              ▲
-                              │ HTTP POST http://LAPTOP_IP:8000/direction
-                        firmware/  Iurii
-                        ESP32 with two mics on a cap, only if mic modules exist
+                              │
+                              │ WebSocket  ws://LAPTOP_IP:8000/ws/pendant
+                              ▼
+                        pendant/   Iurii
+                        Android app on a lanyard; plays a phrase when the wearer long-presses
 
                         tools/     Dara
                         record.py saves what the glasses hear; eval.py scores the classifier on every clip
@@ -80,10 +82,14 @@ Server to plugin, one JSON frame each time the state changes:
 - `ttl_ms`: show for this long, then go blank. `0` means show until the next frame.
 - `level`: brightness, 1 to 4
 
-Direction node to server, HTTP POST, up to 10 per second:
+Plugin to server when the wearer long-presses, and server to pendant,
+unchanged, on `ws://LAPTOP_IP:8000/ws/pendant`:
 ```json
-{"dir":"left","margin_db":8.2}
+{"t":"say","phrase":"deaf_intro"}
 ```
+`phrase` is one of `deaf_intro` ("Hi, I'm deaf. Please face me and speak
+slowly."), `repeat` ("Could you repeat that?"), `type_it` ("Could you type it
+on your phone?").
 
 What the plugin draws, one text container:
 
@@ -94,6 +100,7 @@ What the plugin draws, one text container:
 | speech | `speech  <-` | 2 | until idle, at least 1 s |
 | name | `<-  YOUR NAME` | 4 | ttl_ms |
 | alarm | `ALARM` or `SIREN` on line 1, direction on line 2 | 4 | until idle |
+| phrase picker | the selected phrase text, for example `> Could you repeat that?` | 3 | while swiping, 3 s after the last swipe |
 
 ## 4. Who builds what
 
@@ -142,19 +149,25 @@ Build, in this order:
    table, centered by padding with spaces.
 4. `?demo=1` in the URL: skip the socket and cycle idle, cue, speech, name,
    alarm every 4 s. This is what Dara packages for the first Beta test.
-5. Lifecycle. On `SYSTEM_EXIT_EVENT` or `ABNORMAL_EXIT_EVENT`: stop the audio,
+5. Phrase picker. Swipe up or down cycles the three phrases; the HUD shows
+   the selected one for 3 s. Long-press sends `{"t":"say","phrase":...}` on
+   the socket. Swipes arrive as `SCROLL_TOP_EVENT` and `SCROLL_BOTTOM_EVENT`,
+   long-press as `LONG_PRESS_EVENT` on `sysEvent`. Single tap stays unused.
+6. Lifecycle. On `SYSTEM_EXIT_EVENT` or `ABNORMAL_EXIT_EVENT`: stop the audio,
    close the socket, unsubscribe. On double tap: `shutDownPageContainer(1)`.
    When the page becomes visible again (`visibilitychange`): call
    `audioControl(true, AudioInputSource.Glasses)` again and reconnect. The
    mic stream dies when the phone locks; this brings it back.
-6. On the real glasses: `npx evenhub qr --url http://YOUR_IP:5173` with the
+7. On the real glasses: `npx evenhub qr --url http://YOUR_IP:5173` with the
    phone on the hotspot, your fake server running. Then
    `npm run build && npx evenhub pack app.json dist -o earshot.ehpk` and
    check the packer accepts the manifest. Do not commit the `.ehpk`;
    `.gitignore` excludes it, and Dara packs a fresh one at submission.
 
 Done when: with your fake server, the real glasses show every row of the
-section 3 table, readable and centered. Double tap exits. After the phone is
+section 3 table, readable and centered. Swiping cycles the phrases and a
+long-press sends a `say` frame (your fake server prints it). Double tap
+exits. After the phone is
 locked 5 minutes and reopened, states show again. The packer produces an
 `.ehpk` without complaint.
 
@@ -166,7 +179,7 @@ whitelist, not your code.
 
 One Python process. It receives audio, runs the classifier and the keyword
 spotter, decides what the HUD should show, and sends that to the plugin. It
-also accepts direction posts from the ESP32.
+also relays `say` frames from the plugin to the pendant.
 
 Setup:
 ```bash
@@ -198,7 +211,10 @@ Build, in this order:
    Every 0.5 s: classifier, name spotter, state machine, send if changed.
    `POST /direction` stores the latest value with a timestamp. `GET /` is a
    status page. Also log the `direction` and `speakerRole` of every frame to
-   the console; that is the Tier 0 test.
+   the console; that is the Tier 0 test. `WebSocket /ws/pendant` accepts one
+   connection from Iurii's app; any `say` frame that arrives on
+   `/ws/glasses` is forwarded to it unchanged. Drop `POST /direction`; the
+   ESP32 node is gone.
 2. `--mock` flag. Do this before anything else; it lets Wendy and Dara test
    against a real server later without your classifier being done.
 3. `classify.py`. `tf.lite.Interpreter` on `yamnet.tflite`. Run the last
@@ -224,7 +240,7 @@ Build, in this order:
    - any other cue gives `cue` for 4 s; a newer cue replaces an older one
    - speech with `speakerRole != "self"` gives `speech`; holds while detected, fades 3 s after, stays at least 1 s
    - otherwise `idle`
-   - `dir` is the most recent direction under 1 s old, from the glasses tag if it maps, else from `/direction`, else `near`
+   - `dir` is the most recent glasses direction tag under 1 s old, mapped to a side if Dara's test says it maps, else `near`
    A few asserts in `test_state.py`: two sounds at once, alarm then doorbell,
    speech from self, direction expiring.
 6. `name.py`. Porcupine on the same int16 stream in 512 sample frames.
@@ -238,54 +254,60 @@ If stuck: TensorFlow will not install, use `pip install ai-edge-litert`, same
 `Interpreter`. Porcupine will not cooperate, leave `name.py` as a stub that
 never fires and move on.
 
-### 4.3 Iurii: the direction node (`firmware/`)
+### 4.3 Iurii: the pendant speaker app (`pendant/`)
 
-Direction is the arrow on each cue. It is the one thing the glasses may not
-be able to do alone. Two possible sources, and you own finding out which.
+The G2 has no speaker, so when the wearer wants to say something to a hearing
+person, something else has to make the sound. Your piece is an Android app
+on a phone worn on a lanyard. It connects to the server, waits for a `say`
+frame, and plays the matching clip out loud. The hearing person looks at the
+pendant, not at a phone pointed at them.
 
-First, the question that decides everything: does the G2's own `direction`
-field carry data? Nikhil's server prints it per frame once Wendy's plugin
-streams to it, and Wendy's fake server does not, so this test needs both of
-their step 1s done and the glasses. Until then, work on the ESP32 node, which
-is useful either way as a backup.
+Setup: Android Studio, your Android phone with developer mode on, and an
+ElevenLabs account (free tier) at https://elevenlabs.io.
 
-Setup: Arduino IDE 2, Boards Manager "esp32 by Espressif Systems". `WiFi.h`,
-`HTTPClient.h`, and `driver/i2s.h` come with it.
+Clips first, before any code: render the three phrases from section 3 with
+ElevenLabs, one voice, as MP3s named `deaf_intro.mp3`, `repeat.mp3`,
+`type_it.mp3`. Put them in the app's `res/raw/`. No API call at the table;
+the files ship inside the app. This is what earns the ElevenLabs prize.
 
-Parts: the plain ESP32 board we have, the breadboard, and from the MLH
-hardware table if there is one: two I2S microphone modules (INMP441,
-SPH0645, ICS-43434), or two analog sound modules (KY-038, KY-037, MAX4466);
-ten male to female jumper wires; a USB data cable for the board. No
-microphones means no ESP32 node.
-
-Your fake receiver, so you never need Nikhil's server:
-`firmware/receiver.py`, 15 lines of FastAPI with one `POST /direction` that
-prints what it receives. Run it on your laptop; the ESP32 posts to your IP.
+Your fake input, so you never need Nikhil's server: `pendant/fake_server.py`,
+about 10 lines with the `websockets` package. It accepts a connection on
+`ws://0.0.0.0:8000/ws/pendant` and sends `{"t":"say","phrase":"repeat"}`
+every 5 s, cycling through the three ids.
 
 Build:
 
-1. Wire two mics 15 cm apart on a strip of cardboard that sits on a cap, one
-   over each ear. I2S: share SCK and WS, each SD to an I2S pin, L/R select
-   pins tied opposite. Analog: outputs to GPIO 34 and 35, 3.3 V, ground.
-2. `firmware/direction/direction.ino`. Join the hotspot in `setup()`. Every
-   100 ms read both mics, RMS of each, `margin_db = 20 * log10(rms_left /
-   rms_right)`. If the absolute value is over 6, POST
-   `{"dir":"left" or "right","margin_db":x}` to `http://RECEIVER_IP:8000/direction`.
-   Blink the LED on every POST.
-3. Bench test with your receiver printing. Talk from the left and the right
-   at 1 m. Write the hit rate in `docs/direction-test.md`.
-4. The Tier 0 test, as soon as Wendy's plugin streams into Nikhil's server:
-   stand 1 m away, talk 5 s from left, right, front, behind, say which
-   position you are in, and have Nikhil read the `direction` numbers off his
-   log. Write them in `docs/direction-test.md` with the verdict. If they
-   separate by position, give Nikhil the thresholds and the ESP32 is a
-   backup. If always null or random, the ESP32 is the arrow.
-5. Demo rig: a Bluetooth speaker (a phone speaker is too quiet in the hall),
-   the clips on a phone, L and R taped on the table, a cap for the mic strip.
+1. A one screen app. A text field for the server address, defaulting to
+   `ws://LAPTOP_IP:8000/ws/pendant`, a Connect button, and a status line.
+   Keep the screen on while connected.
+2. A WebSocket client (OkHttp is simplest). On every `say` frame, play the
+   clip for that `phrase` with `MediaPlayer` at full volume. Ignore anything
+   else. Reconnect after 1 s if the socket drops.
+3. Three big buttons that play the clips locally, so the pendant also works
+   with no glasses at all, for when a judge asks "what if the glasses die?"
+4. Test against your fake server on your laptop over the hotspot. Then
+   against Nikhil's server once his `/ws/pendant` exists.
+5. The physical part: a lanyard or a chest clip for the phone, speaker
+   facing out, a printed card on the back that says "I'm deaf. Please face
+   me." A Bluetooth speaker for the sound demo (a phone speaker is too quiet
+   in the hall for doorbell clips), the clips on a phone, and L and R taped
+   on the table.
+6. The Tier 0 direction test, as soon as Wendy's plugin streams into
+   Nikhil's server: stand 1 m away, talk 5 s from left, right, front,
+   behind, say which position you are in, and have Nikhil read the
+   `direction` numbers off his log. Write them in
+   `docs/direction-test.md` with a verdict. If they separate by position,
+   give Nikhil the thresholds. If always null or random, we ship without
+   the arrow and the file says so.
 
-Done when: `docs/direction-test.md` has the Tier 0 numbers and a verdict, and
-either the ESP32 posts the correct side 9 of 10 at 1 m or the file says we
-ship without the arrow.
+Done when: with your fake server, the pendant plays the right clip within
+1 s of each frame, every time, and reconnects on its own after you kill and
+restart the fake server. `docs/direction-test.md` has a verdict.
+
+If stuck: if the WebSocket library fights you, poll `GET /say/next` every
+200 ms instead and ask Nikhil to add that endpoint. If ElevenLabs will not
+cooperate, Android's built in `TextToSpeech` plays the same three strings;
+we lose that prize and nothing else.
 
 ### 4.4 Dara: evals, direction mapping, submission (`tools/`, `docs/`, Devpost)
 
@@ -313,15 +335,15 @@ After 9, code:
    the threshold choices come from.
 3. If the Tier 0 numbers in `docs/direction-test.md` separate by position,
    write the mapping from the tag to left, right, front, behind and send it
-   to Nikhil in the chat.
+   to Nikhil in the chat. If not, we ship without the arrow.
 
 After 9, integration and submission:
 4. Devpost project: create it, add all four, select the challenges Even
    Realities, Beyond the Digital, Applied Intelligence, paste the PRD demo
    table as the description.
 5. Nikhil's laptop runs `python main.py`; Wendy's `app.json` whitelist gets
-   Nikhil's IP; the ESP32 posts to Nikhil's IP. Run the demo script from the
-   PRD start to finish. Film it rough; that is the backup video.
+   Nikhil's IP; Iurii's pendant connects to Nikhil's IP. Run the demo script
+   from the PRD start to finish. Film it rough; that is the backup video.
 6. Package Wendy's build and push it to a Beta group under your account.
    Install from Me, then Beta tester, on the phone the G2 is paired to; add
    that phone's Even account email to the Beta group. Lock the phone 5 minutes, reopen, check
@@ -340,14 +362,14 @@ in a row with nobody touching a laptop.
 | When | Must be true |
 |---|---|
 | 9:00 pm | Each piece passes its own "done when" test, or its owner says what is missing. Integration starts. |
-| 11:00 pm | The full loop has worked on the real glasses once. If not, cut: name flash first, then direction, then speech cue. Sound cue, alarm, and blank by default do not get cut. |
+| 11:00 pm | The full loop has worked on the real glasses once. If not, cut: name flash first, then direction, then the pendant, then speech cue. Sound cue, alarm, and blank by default do not get cut. |
 | 8:00 am | Final package, Beta push, video. |
 | 11:00 am | Submitted. Code frozen. |
 | 12:00 pm | Deadline. Judging follows. Glasses, phone, laptop, speaker charged. |
 
 ## 6. Submission checklist
 
-- [ ] Devpost: description, track Beyond the Digital, challenges Even Realities and Applied Intelligence, public repo, 2 to 3 minute video, "Built with", all four members.
+- [ ] Devpost: description, track Beyond the Digital, challenges Even Realities, Applied Intelligence, and Best Use of ElevenLabs, public repo, 2 to 3 minute video, "Built with", all four members.
 - [ ] Even: `.ehpk` on a Beta group and installed on the phone the G2 is paired to. The app name on the Devpost page. README section "Install and run on G2" listing any keys needed.
 - [ ] Repo public. README: what it is, the demo script, the diagram from section 2, how to run each piece, the formats from section 3.
 - [ ] One measured number for the pitch from `eval.py`: doorbell latency. Direction accuracy if we have it.

@@ -57,11 +57,13 @@ Judge wears the G2. HUD is blank. A teammate:
 | 3 | Knocks on the table behind | `knock` for 4 s, then blank | 11 pm Sat |
 | 4 | Plays a smoke-alarm clip | Full screen `ALARM` until it stops | 11 pm Sat |
 | 5 | Talks normally | `speech  <-` while talking, fades after 3 s | 11 pm Sat |
-| 6 | Hands the glasses to the next judge | Nothing to set up | 10 am Sun |
+| 6 | Waits | Judge long-presses the temple; the pendant says "Hi, I'm deaf. Please face me and speak slowly." | 11 pm Sat |
+| 7 | Hands the glasses to the next judge | Nothing to set up | 10 am Sun |
 
 Pitch, once: "A deaf person misses the doorbell, the siren, and their own name.
 Conversate already captions what people say to you. Earshot covers everything
-Conversate ignores, and shows nothing the rest of the time."
+Conversate ignores, shows nothing the rest of the time, and when you need to
+answer, it speaks for you."
 
 ## 7. Requirements
 
@@ -78,6 +80,7 @@ a stretch.
 | R6 | P1 | Speech cue. Someone other than the wearer talking shows `speech`; the wearer's own voice does not. | Wearer talks: nothing. Teammate talks: cue within 1 s. |
 | R7 | P1 | Direction. Every cue carries left, right, front, or behind. | Correct side 9 of 10 at 1 m. Source may be the G2's own direction tag or an external two-mic node; see PLAN.md. |
 | R8 | P2 | Companion phone page with an event log a judge can scroll. | Exists and matches what the glasses showed. |
+| R9 | P1 | Outbound phrase. Swipe on the temple picks one of three phrases, shown on the HUD. Long-press plays it from a speaker (an Android phone worn as a pendant). Phrases: "Hi, I'm deaf. Please face me and speak slowly." / "Could you repeat that?" / "Could you type it on your phone?" | A judge 1 m away hears the phrase within 1 s of the press, 5 of 5 tries. |
 
 ## 8. Success metrics
 
@@ -122,3 +125,7 @@ a stretch.
   says caption apps won't stand out.
 - 2026-10-17 17:10: phase 1 uses only the G2 mic. External hardware is for
   direction only, and only if the glasses can't provide it.
+- 2026-10-17 19:20: ESP32 mic node dropped (the G2 mic is the only
+  microphone we use; direction comes from the G2 tag or not at all). Added
+  the outbound phrase, R9: an Android phone on a lanyard as the speaker,
+  built by Iurii. The G2 has no speaker; audio always comes from a phone.
