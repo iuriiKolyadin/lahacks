@@ -22,9 +22,9 @@ Git: everyone on `main`, small commits, `git pull --rebase` before pushing.
 Edit only your own folder. If you are stuck for 20 minutes, say so in the
 chat.
 
-Glasses: Wendy has her own G2 and phone, already paired, so she tests on real
-hardware all evening. Dara's pair is the second set, used for the Beta install
-and the demo. Two pairs also means two judges can try it at once.
+Glasses: there is one G2. It stays with the team, paired to Wendy's phone,
+so real hardware testing continues while Dara is away. The Beta install at
+the end is done on whichever phone the glasses are paired to at that point.
 
 Words used below:
 
@@ -332,7 +332,8 @@ After 9, integration and submission:
    Nikhil's IP; the ESP32 posts to Nikhil's IP. Run the demo script from the
    PRD start to finish. Film it rough; that is the backup video.
 8. Package Wendy's build and push it to a Beta group under your account.
-   Install from Me, then Beta tester. Lock the phone 5 minutes, reopen, check
+   Install from Me, then Beta tester, on the phone the G2 is paired to; add
+   that phone's Even account email to the Beta group. Lock the phone 5 minutes, reopen, check
    states resume. Deny the mic permission once and check nothing crashes.
 9. Sunday morning: final package and Beta push, the 2 to 3 minute video
    (20 s pitch, the six demo steps, 20 s on how it works), the README section
@@ -356,6 +357,6 @@ in a row with nobody touching a laptop.
 ## 6. Submission checklist
 
 - [ ] Devpost: description, track Beyond the Digital, challenges Even Realities and Applied Intelligence, public repo, 2 to 3 minute video, "Built with", all four members.
-- [ ] Even: `.ehpk` on a Beta group and installed on Dara's phone. The app name on the Devpost page. README section "Install and run on G2" listing any keys needed.
+- [ ] Even: `.ehpk` on a Beta group and installed on the phone the G2 is paired to. The app name on the Devpost page. README section "Install and run on G2" listing any keys needed.
 - [ ] Repo public. README: what it is, the demo script, the diagram from section 2, how to run each piece, the formats from section 3.
 - [ ] One measured number for the pitch from `eval.py`: doorbell latency. Direction accuracy if we have it.
