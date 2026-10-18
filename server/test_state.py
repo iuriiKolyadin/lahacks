@@ -198,17 +198,21 @@ def test_direction_uses_loud_recent_frames():
 
 
 def test_direction_transient_beats_room_noise():
-    # A snap: 2 loud frames at +49 among 60 room frames at -17, and the
-    # classifier result lands 1.5 s later. The snap must still win.
+    # A snap as the G2 really reports it (snap #8 in docs/direction-test.md):
+    # the tag lands one frame BEFORE the loud audio, and the tag on the loud
+    # frame itself is junk. 60 room frames, then the snap, and the classifier
+    # result lands 1.5 s later. The snap's own tag (+49, left) must win.
     import direction as D
     tr = D.DirectionTracker()
     for i in range(60):
         tr.add(-17, rms=600, now=i * 0.05)
-    tr.add(49, rms=5000, now=1.0)
-    tr.add(49, rms=4200, now=1.05)
+    tr.add(49, rms=95, now=1.0)      # tag for the snap, audio not here yet
+    tr.add(-66, rms=1778, now=1.05)  # the snap's audio, with a junk tag
+    tr.add(-90, rms=729, now=1.1)
     for i in range(30):
-        tr.add(-8, rms=600, now=1.1 + i * 0.05)
+        tr.add(-8, rms=600, now=1.15 + i * 0.05)
     assert tr.angle(now=2.5) == 49
+    assert tr.side(now=2.5) == "left"
 
 
 if __name__ == "__main__":

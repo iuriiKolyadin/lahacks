@@ -44,7 +44,8 @@ def main(path):
         win = rows[lo:hi]
         cells = []
         for j, r in enumerate(win, lo):
-            mark = "*" if j == i else " "
+            # * loudest frame; > the frame whose tag the tracker pairs with it
+            mark = "*" if j == i else (">" if j == i - direction.TAG_LEAD_FRAMES else " ")
             cells.append(f"{mark}{r['direction']:+4d}@{r['rms']:<5d}")
         tr = direction.DirectionTracker()
         for r in rows[max(0, i - 60): i + 20]:
@@ -52,7 +53,7 @@ def main(path):
         ang = tr.angle(now=rows[min(i + 19, len(rows) - 1)]["t"])
         print(f"#{n:2d} t={rows[i]['t'] - rows[0]['t']:6.1f}s  " + " ".join(cells)
               + f"   -> tracker {ang:+.0f} = {direction.side_from_angle(ang)}")
-    print("\n* = loudest frame. Each cell is tag@rms. Compare the sides you snapped on, in order.")
+    print("\n* = loudest frame, > = the frame whose tag counts for it (TAG_LEAD_FRAMES). Each cell is tag@rms.")
 
 
 if __name__ == "__main__":

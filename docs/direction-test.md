@@ -51,6 +51,37 @@ only with frames at least half as loud as the loudest one in the window. An
 alarm is loud for many frames so its median is unchanged (test added in
 `server/test_state.py`).
 
+## Snap test at 1 m, Sun 2026-10-18, ~1 am (Wendy, `server --dump`)
+
+Wendy snapped 5 left, 5 right, 3 front, 3 behind at 1 m, with the server
+writing every frame via `--dump` and `tools/dirtest.py` reading it back.
+Tag one frame before the loudest frame, and on the loudest frame:
+
+| set      | tag one frame before the peak | tag on the peak frame   |
+|----------|-------------------------------|-------------------------|
+| left x5  | +49 +37 +8 +49 +37            | -66 +27 +27 -66 -66     |
+| right x5 | 0 -90 -90 +49 -66             | -90 -37 +90 -66 -17     |
+| front x3 | -8 -8 -8                      | -8 0 -66                |
+| behind x3| -17 -90 -17                   | -66 -66 -49             |
+
+Findings:
+
+- The tag arrives one frame ahead of the audio it describes. The tag on the
+  loud frame itself is junk (large negative from every side), the tag on
+  the frame before it is the real estimate. Likely the G2's speech
+  enhancement delays the PCM but not the metadata. `TAG_LEAD_FRAMES = 1` in
+  `server/direction.py` pairs each frame's loudness with the previous
+  frame's tag.
+- `SIGN = -1` was right: positive is the wearer's left.
+- Replaying the 16 snaps through the fixed tracker: left 4/5, right 4/5
+  (misses: one left read center, one right read left). Before the fix it
+  was 4/10. Front reads center 2/3. Behind reads "right" 2/3, so behind is
+  wrong more often than not; the HUD cannot fix that.
+- Quiet room is -8 / -17, so "center" is also what you get when the tag
+  simply did not update.
+
+Pitch number: correct side 8 of 10 at 1 m.
+
 ## Still to do
 
 The four-position test from the plan: stand 1 m away, talk 5 s from left,

@@ -35,6 +35,12 @@ WINDOW_S = 3.0
 # outvote them and every transient read "center". An alarm or siren is loud for
 # many frames in a row, so the median still has plenty to average over.
 PEAK_FRACTION = 0.5
+# The tag runs ahead of the audio it describes by this many frames. From 16
+# snaps at 1 m (docs/direction-test.md, Sun 2026-10-18): the tag ON the
+# loudest frame was -66 or worse from every side, but the tag one frame
+# BEFORE it was positive for all 5 left snaps and negative for 3 of 5 right
+# ones. The G2's speech enhancement probably delays the PCM, not the tag.
+TAG_LEAD_FRAMES = 1
 
 
 def side_from_angle(deg: float | None) -> str:
@@ -53,11 +59,16 @@ class DirectionTracker:
 
     def __init__(self):
         self.frames: deque[tuple[float, int, float]] = deque()  # (time, tag, rms)
+        self.pending: deque[int] = deque()  # tags not yet paired with their audio
 
     def add(self, tag: int | None, rms: float, now: float | None = None) -> None:
+        """Pair this frame's loudness with the tag from TAG_LEAD_FRAMES ago."""
         now = time.time() if now is None else now
         if tag is not None:
-            self.frames.append((now, tag, rms))
+            self.pending.append(tag)
+            while len(self.pending) > TAG_LEAD_FRAMES + 1:
+                self.pending.popleft()
+            self.frames.append((now, self.pending[0], rms))
         while self.frames and now - self.frames[0][0] > WINDOW_S:
             self.frames.popleft()
 
