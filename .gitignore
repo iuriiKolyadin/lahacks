@@ -1,7 +1,6 @@
 # Node / plugin
 node_modules/
 dist/
-*.ehpk
 *.tsbuildinfo
 .vite/
 
