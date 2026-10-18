@@ -113,8 +113,6 @@ documented, not shipped. Details and caveats in `docs/eval-2026-10-17.md` and
 
 ![When you need to answer, the phone does the talking](docs/deck/images/companion.jpg)
 
-Title and architecture slides are above. Full deck, editable: https://www.figma.com/design/LA4VlcQtfR29T5VfQKtR3s
-
 ## Team
 
 Dara Miao (USC), Iurii Kolyadin (UC Irvine), Nikhil Marisetty (UT Dallas),
