@@ -17,6 +17,7 @@ import argparse
 import asyncio
 import itertools
 import json
+import os
 import time
 from collections import OrderedDict
 from contextlib import asynccontextmanager
@@ -227,14 +228,74 @@ def make_app(hub: Hub) -> FastAPI:
     return app
 
 
+def lan_urls(port: int) -> list[str]:
+    """Base URLs other devices can try, best guess first.
+
+    A phone hotspot on an IPv6-only carrier (T-Mobile) gives out no usable IPv4:
+    a Mac shows 192.0.0.2, which is its own IPv4-over-IPv6 shim, not reachable
+    from other devices. There the IPv6 address is the one to use.
+    """
+    import socket
+
+    def outbound(family, target):  # the address used for outbound traffic; nothing is sent
+        try:
+            s = socket.socket(family, socket.SOCK_DGRAM)
+            s.connect((target, 80))
+            ip = s.getsockname()[0]
+            s.close()
+            return ip
+        except OSError:
+            return None
+
+    urls = []
+    v6 = outbound(socket.AF_INET6, "2001:4860:4860::8888")
+    if v6:
+        urls.append(f"ws://[{v6}]:{port}")
+    v4 = outbound(socket.AF_INET, "8.8.8.8")
+    if v4 and not v4.startswith("192.0.0."):
+        urls.append(f"ws://{v4}:{port}")
+    return urls or [f"ws://<this laptop's IP>:{port}"]
+
+
+def listen_sockets(port: int) -> list:
+    """One IPv4 and one IPv6 listening socket on `port`, so both kinds of network work."""
+    import socket
+
+    socks = []
+    for family, addr in ((socket.AF_INET, ("0.0.0.0", port)), (socket.AF_INET6, ("::", port))):
+        try:
+            s = socket.socket(family, socket.SOCK_STREAM)
+            if os.name != "nt":  # on Windows SO_REUSEADDR lets two servers share a port
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            if family == socket.AF_INET6:
+                s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+            s.bind(addr)
+            socks.append(s)
+        except OSError as err:
+            log(f"could not listen on {addr[0]} port {port}: {err}")
+    if not socks:
+        raise SystemExit(f"port {port} is in use; stop the other server (fake_server.py?) first")
+    return socks
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mock", action="store_true", help="cycle every HUD state every 5 s")
-    ap.add_argument("--host", default="0.0.0.0")
+    ap.add_argument("--host", help="listen on this address only (default: all IPv4 and IPv6)")
     ap.add_argument("--port", type=int, default=8000)
     args = ap.parse_args()
     hub = Hub(mock=args.mock)
-    uvicorn.run(make_app(hub), host=args.host, port=args.port, log_level="warning", ws_max_size=4 * 1024 * 1024)
+    app = make_app(hub)
+    opts = dict(log_level="warning", ws_max_size=4 * 1024 * 1024)
+    if args.host:
+        uvicorn.run(app, host=args.host, port=args.port, **opts)
+        return
+    socks = listen_sockets(args.port)
+    log(f"Earshot hub ({'mock' if args.mock else 'live'}) on port {args.port}. Point the plugin and the iPhone at:")
+    for base in lan_urls(args.port):
+        log(f"  {base}/ws/glasses    {base}/ws/classifier")
+    log("Nothing more prints until something connects.")
+    uvicorn.Server(uvicorn.Config(app, **opts)).run(sockets=socks)
 
 
 if __name__ == "__main__":

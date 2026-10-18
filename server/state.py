@@ -16,7 +16,9 @@ Priority: alarm > name > cue > speech > idle.
 
 import labels as L
 
-ALARM_HOLD_S = 2.0
+# 3 s, not PRD's 2 s: on a real G2 alarm recording detections came up to 2.5 s
+# apart, so a 2 s hold blinked ALARM off mid-alarm.
+ALARM_HOLD_S = 3.0
 NAME_TTL_S = 4.0
 CUE_TTL_S = 4.0
 SPEECH_FADE_S = 3.0

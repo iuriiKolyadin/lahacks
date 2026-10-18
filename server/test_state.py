@@ -29,21 +29,21 @@ def test_alarm_suppresses_doorbell_and_holds():
     assert sm.step(0.0)["state"] == "alarm"
     sm.observe({"doorbell": 0.9}, now=1.0)  # siren stopped, doorbell still ringing
     assert sm.current(1.0)["state"] == "alarm"
-    assert sm.current(2.5) == IDLE  # doorbell during the hold was dropped
+    assert sm.current(3.5) == IDLE  # doorbell during the hold was dropped
 
 
 def test_alarm_then_doorbell_after_hold():
     sm = StateMachine()
     sm.observe({"alarm": 0.7}, now=0.0)
-    sm.observe({"doorbell": 0.9}, now=3.0)
-    assert sm.current(3.0)["label"] == "doorbell"
+    sm.observe({"doorbell": 0.9}, now=3.5)
+    assert sm.current(3.5)["label"] == "doorbell"
 
 
 def test_alarm_wipes_existing_cue():
     sm = StateMachine()
     sm.observe({"knock": 0.9}, now=0.0)
     sm.observe({"siren": 0.9}, now=0.5)
-    assert sm.current(3.0) == IDLE  # 2.5 s after the siren; knock did not come back
+    assert sm.current(3.6) == IDLE  # 3.1 s after the siren; knock did not come back
 
 
 def test_speech_from_self_ignored():

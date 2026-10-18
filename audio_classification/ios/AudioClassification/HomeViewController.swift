@@ -77,7 +77,7 @@ class HomeViewController: UIViewController {
   }
 
   @objc private func willEnterForeground() {
-    if inputSource == .network { link.reconnect() }
+    link.reconnect()
   }
 
   private func setUpStatusHeader() {
@@ -94,10 +94,11 @@ class HomeViewController: UIViewController {
 
   private func refreshStatus() {
     let source = inputSource == .network ? "Glasses audio" : "Phone mic"
-    var lines = [source]
+    var lines = [source, linkStatus]
     if inputSource == .network {
-      lines.append(linkStatus)
       lines.append("\(framesThisSecond) frames/s in · \(resultsThisSecond) results/s out")
+    } else {
+      lines.append("\(resultsThisSecond) results/s out")
     }
     lines.append("Tap to change")
     statusLabel.text = lines.joined(separator: "\n")
@@ -115,24 +116,19 @@ class HomeViewController: UIViewController {
       field.autocapitalizationType = .none
       field.autocorrectionType = .no
     }
-    alert.addAction(
-      UIAlertAction(title: "Use glasses audio", style: .default) { _ in
-        let text = alert.textFields?.first?.text?.trimmingCharacters(in: .whitespaces) ?? ""
-        if let url = URL(string: text), url.scheme == "ws" || url.scheme == "wss" {
-          self.serverURL = text
-        }
-        self.inputSource = .network
-        self.link.reconnect(to: URL(string: self.serverURL))
-        self.restartClassifier()
-        self.refreshStatus()
-      })
-    alert.addAction(
-      UIAlertAction(title: "Use phone mic", style: .default) { _ in
-        self.inputSource = .microphone
-        self.link.stop()
-        self.startAudioClassification()
-        self.refreshStatus()
-      })
+    // Both modes send results to the hub; they differ only in where the audio comes from.
+    func apply(_ source: InputSource) {
+      let text = alert.textFields?.first?.text?.trimmingCharacters(in: .whitespaces) ?? ""
+      if let url = URL(string: text), url.scheme == "ws" || url.scheme == "wss" {
+        serverURL = text
+      }
+      inputSource = source
+      link.reconnect(to: URL(string: serverURL))
+      startAudioClassification()
+      refreshStatus()
+    }
+    alert.addAction(UIAlertAction(title: "Use glasses audio", style: .default) { _ in apply(.network) })
+    alert.addAction(UIAlertAction(title: "Use phone mic", style: .default) { _ in apply(.microphone) })
     alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
     present(alert, animated: true)
   }
@@ -140,9 +136,9 @@ class HomeViewController: UIViewController {
   // MARK: - Private Methods
   /// Request permission and start audio classification if granted.
   private func startAudioClassification() {
+    link.start()
     // Glasses audio needs no mic permission.
     if inputSource == .network {
-      link.start()
       restartClassifier()
       return
     }
@@ -245,10 +241,9 @@ extension HomeViewController: AudioClassificationHelperDelegate {
   func audioClassificationHelper(_ helper: AudioClassificationHelper, didSucceed result: Result) {
     inferenceResults = result.categories
     tableView.reloadData()
-    if inputSource == .network {
-      link.send(result)
-      resultsThisSecond += 1
-    }
+    // Phone mic results carry no audio ts; the hub shows them on the glasses all the same.
+    link.send(result)
+    resultsThisSecond += 1
     inferenceView.setInferenceTime(result.inferenceTime)
   }
 
@@ -284,6 +279,8 @@ extension HomeViewController: InferenceViewDelegate {
 
 extension HomeViewController: EarshotLinkDelegate {
   func earshotLink(_ link: EarshotLink, didReceive samples: [Float], ts: Int64?) {
+    // In phone-mic mode the hub still forwards glasses audio; ignore it.
+    guard inputSource == .network else { return }
     audioClassificationHelper?.append(samples: samples, ts: ts)
     DispatchQueue.main.async { self.framesThisSecond += 1 }
   }

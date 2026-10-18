@@ -65,6 +65,7 @@ class AudioClassificationHelper {
   private var networkTs: Int64?
   private var networkLastAudio = Date.distantPast
   private var networkFresh = false
+  private let glassesFilter = GlassesAudioFilter()
 
   /// A tensor to store the input audio for the model.
   private let inputAudioTensor: AudioTensor
@@ -172,7 +173,7 @@ class AudioClassificationHelper {
   func append(samples: [Float], ts: Int64?) {
     processQueue.async {
       let size = Int(self.inputAudioTensor.bufferSize)
-      self.networkSamples.append(contentsOf: samples)
+      self.networkSamples.append(contentsOf: self.glassesFilter.highPass(samples))
       if self.networkSamples.count > size {
         self.networkSamples.removeFirst(self.networkSamples.count - size)
       }
@@ -191,7 +192,8 @@ class AudioClassificationHelper {
     let size = Int(inputAudioTensor.bufferSize)
     let buffer = TFLFloatBuffer(size: UInt(size))
     let offset = size - networkSamples.count
-    for (i, s) in networkSamples.enumerated() { buffer.data[offset + i] = s }
+    let window = GlassesAudioFilter.normalize(networkSamples)
+    for (i, s) in window.enumerated() { buffer.data[offset + i] = s }
     try inputAudioTensor.load(buffer: buffer, offset: 0, size: UInt(size))
     return true
   }
@@ -224,5 +226,57 @@ class AudioClassificationHelper {
     } catch {
       DispatchQueue.main.async { self.delegate?.audioClassificationHelper(self, didFail: error) }
     }
+  }
+}
+
+/// Cleans up G2 mic audio before YAMNet. Mirrors server/preprocess.py; keep the numbers in sync.
+///
+/// The G2 stream is dominated by rumble below 300 Hz, about 35 dB louder than the 1 to 4 kHz band
+/// where alarms, sirens and doorbells live, so raw it classifies as Music/Throbbing/Hum. Two
+/// Butterworth high-pass biquads at 600 Hz, then per-window gain to a target RMS, capped so
+/// silence is not blown up into noise.
+final class GlassesAudioFilter {
+  static let cutoffHz = 600.0
+  static let stages = 2
+  static let targetRMS: Float = 0.05
+  static let maxGain: Float = 30
+
+  private let b0, b1, b2, a1, a2: Double
+  /// Per stage: x1, x2, y1, y2. Carried across frames, so feed every frame in order.
+  private var state: [[Double]]
+
+  init(sampleRate: Double = 16000) {
+    let w0 = 2 * Double.pi * Self.cutoffHz / sampleRate
+    let alpha = sin(w0) / (2 * (1 / 2.0.squareRoot()))
+    let c = cos(w0)
+    let a0 = 1 + alpha
+    b0 = (1 + c) / 2 / a0
+    b1 = -(1 + c) / a0
+    b2 = (1 + c) / 2 / a0
+    a1 = -2 * c / a0
+    a2 = (1 - alpha) / a0
+    state = Array(repeating: [0, 0, 0, 0], count: Self.stages)
+  }
+
+  func highPass(_ input: [Float]) -> [Float] {
+    var y = input.map(Double.init)
+    for s in 0..<state.count {
+      var (x1, x2, y1, y2) = (state[s][0], state[s][1], state[s][2], state[s][3])
+      for i in 0..<y.count {
+        let v = y[i]
+        let o = b0 * v + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2
+        x2 = x1; x1 = v; y2 = y1; y1 = o
+        y[i] = o
+      }
+      state[s] = [x1, x2, y1, y2]
+    }
+    return y.map(Float.init)
+  }
+
+  static func normalize(_ window: [Float]) -> [Float] {
+    guard !window.isEmpty else { return window }
+    let rms = (window.reduce(0) { $0 + $1 * $1 } / Float(window.count)).squareRoot() + 1e-9
+    let gain = min(maxGain, targetRMS / rms)
+    return window.map { max(-1, min(1, $0 * gain)) }
   }
 }

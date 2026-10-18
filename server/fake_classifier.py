@@ -7,7 +7,8 @@ Two modes:
         without the iPhone.
     python fake_classifier.py --model ../audio_classification/ios/AudioClassification/TFLite/yamnet.tflite
         Real. Runs the same yamnet.tflite the iPhone app ships on the audio it
-        receives, the same way the app does (last 15600 samples every 0.5 s).
+        receives, the same way the app does (high-pass and gain from
+        preprocess.py, last 15600 samples every 0.5 s).
         Needs `pip install -r requirements-model.txt`. Use it with fake_glasses.py --wav to
         tune thresholds in labels.py without the phone.
 """
@@ -47,10 +48,15 @@ class Yamnet:
         self.inp, self.shape = inp["index"], inp["shape"]  # [15600] or [1, 15600]
         self.out = self.interp.get_output_details()[0]["index"]
 
-    def top(self, samples, k: int = 10):
+    def top(self, samples, k: int = 10, filtered: bool = False):
+        """`samples` is int16 LE bytes. Pass filtered=True if they already went through HighPass."""
+        import preprocess
+
         np = self.np
         x = np.zeros(WINDOW, dtype=np.float32)
-        tail = np.frombuffer(bytes(samples[-WINDOW * 2 :]), dtype="<i2").astype(np.float32) / 32768.0
+        tail = np.frombuffer(bytes(samples[-WINDOW * 2 :]), dtype="<i2").astype(np.float64) / 32768.0
+        if filtered:
+            tail = preprocess.normalize(tail)
         x[WINDOW - len(tail) :] = tail
         self.interp.set_tensor(self.inp, x.reshape(self.shape))
         self.interp.invoke()
@@ -61,6 +67,12 @@ class Yamnet:
 
 async def run(args):
     model = Yamnet(args.model) if args.model else None
+    hp = None
+    if model and not args.raw:
+        import numpy as np
+        import preprocess
+
+        hp = preprocess.HighPass()
     async with connect(args.url, max_size=None) as ws:
         print("connected", args.url, "real YAMNet" if model else "scripted")
         buf = bytearray()
@@ -71,7 +83,11 @@ async def run(args):
                 msg = json.loads(raw)
                 if msg.get("t") != "audio":
                     continue
-                buf.extend(base64.b64decode(msg["pcm"]))
+                pcm = base64.b64decode(msg["pcm"])
+                if hp:
+                    x = np.frombuffer(pcm, dtype="<i2").astype(np.float64) / 32768.0
+                    pcm = (np.clip(hp(x), -1, 1) * 32767).astype("<i2").tobytes()
+                buf.extend(pcm)
                 del buf[: max(0, len(buf) - WINDOW * 2)]
                 state["ts"], state["at"] = msg.get("ts"), time.time()
 
@@ -85,7 +101,7 @@ async def run(args):
             last_sent_ts = state["ts"]
             t = time.time()
             if model:
-                top = model.top(buf)
+                top = model.top(buf, filtered=hp is not None)
             else:
                 label, score = next(script)
                 top = [{"label": label, "score": score}, {"label": "Music", "score": 0.05}]
@@ -98,6 +114,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="ws://localhost:8000/ws/classifier")
     ap.add_argument("--model", help="path to yamnet.tflite for real classification")
+    ap.add_argument("--raw", action="store_true", help="with --model: skip the high-pass and gain")
     asyncio.run(run(ap.parse_args()))
 
 
