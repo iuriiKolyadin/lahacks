@@ -1,0 +1,32 @@
+# Node / plugin
+node_modules/
+dist/
+*.ehpk
+*.tsbuildinfo
+.vite/
+
+# Secrets (keep .env.example committed)
+.env
+.env.*
+!.env.example
+
+# Python / server
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Firmware (PlatformIO / Arduino)
+.pio/
+build/
+
+# Logs and recordings
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
