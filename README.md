@@ -1,5 +1,7 @@
 # Cue
 
+![Cue on Even G2: the lens reads <----- siren](docs/deck/images/title.jpg)
+
 Sound awareness for deaf and hard-of-hearing people, on Even Realities G2
 smart glasses.
 
@@ -38,6 +40,8 @@ came from. Cue does both, with no hardware beyond the glasses and a phone.
   for the other person to type on.
 
 ## How it works
+
+![Four devices, one hotspot: glasses, Even app, laptop hub, iPhone classifier](docs/deck/images/architecture.jpg)
 
 ```
 G2 glasses ──Bluetooth──▶ phone: Even app + plugin/ ──WebSocket──▶ laptop: server/ ──▶ phone: audio_classification/
@@ -102,6 +106,14 @@ Knocks and most doorbells are lost to the high-pass filter that alarms need
 through the G2 microphones. A measured two-path fix reaches 19 of 22 and is
 documented, not shipped. Details and caveats in `docs/eval-2026-10-17.md` and
 `docs/direction-test.md`.
+
+## Pitch deck
+
+![Deaf people miss a sound every day; no glasses app shows one](docs/deck/images/problem.jpg)
+
+![When you need to answer, the phone does the talking](docs/deck/images/companion.jpg)
+
+Title and architecture slides are above. Full deck, editable: https://www.figma.com/design/LA4VlcQtfR29T5VfQKtR3s
 
 ## Team
 
