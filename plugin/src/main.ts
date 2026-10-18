@@ -54,7 +54,7 @@ if (demo) {
 }
 
 // ── Mic, always on ─────────────────────────────────────────────────
-// No tap-to-pause: Earshot has to hear the doorbell without the wearer touching anything.
+// No tap-to-pause: Cue has to hear the doorbell without the wearer touching anything.
 
 const micOk = await bridge.audioControl(true, AudioInputSource.Glasses)
 if (!micOk) setStatus('error', 'audioControl(true) returned false')

@@ -34,7 +34,7 @@ struct Result {
 enum InputSource: String {
   /// This phone's own microphone (the original sample app).
   case microphone
-  /// The G2 glasses, streamed in through the Earshot laptop hub (`append(samples:ts:)`).
+  /// The G2 glasses, streamed in through the Cue laptop hub (`append(samples:ts:)`).
   case network
 }
 

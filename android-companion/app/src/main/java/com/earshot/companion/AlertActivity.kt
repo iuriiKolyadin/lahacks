@@ -256,7 +256,7 @@ class AlertActivity : Activity() {
         render()
         val service = BridgeService.instance
         if (service == null) {
-            said.text = "Not spoken: the Earshot service is not running."
+            said.text = "Not spoken: the Cue service is not running."
             return
         }
         service.speakReply(p.id, null, null, source = "alert screen")

@@ -62,7 +62,7 @@ object Notifications {
         val icon = Icon.createWithResource(context, R.drawable.ic_stat_earshot)
         val builder = Notification.Builder(context, CHANNEL_BRIDGE)
             .setSmallIcon(R.drawable.ic_stat_earshot)
-            .setContentTitle("Earshot: tap a button to speak")
+            .setContentTitle("Cue: tap a button to speak")
             .setContentText(status)
             .setStyle(Notification.BigTextStyle().bigText(
                 status + "\n" + Phrases.ALL.joinToString("\n") { "• ${it.label}: ${prefs.phraseText(it)}" }))

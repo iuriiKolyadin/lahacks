@@ -1,4 +1,4 @@
-"""Score the Earshot pipeline on saved clips.
+"""Score the Cue pipeline on saved clips.
 
 For every WAV in the clip folders, this runs the same steps the live system
 runs: the high-pass and gain from server/preprocess.py, YAMNet on the last

@@ -13,7 +13,7 @@ export function mountUi() {
   app.innerHTML = `
     <main class="panel">
       <header>
-        <h1>Earshot</h1>
+        <h1>Cue</h1>
         <div id="status" class="status status-connecting">Connecting…</div>
       </header>
       <section class="transcript" aria-live="polite">
@@ -24,7 +24,7 @@ export function mountUi() {
       </section>
       <section class="tiers">
         <div class="label">Alert levels</div>
-        <p class="hint">Critical shows spaced capitals in a frame and flashes fast. Medium shows capitals and flashes slowly. Normal is dimmer and blinks twice. Critical and Medium also ring the Earshot Companion phone like a call.</p>
+        <p class="hint">Critical shows spaced capitals in a frame and flashes fast. Medium shows capitals and flashes slowly. Normal is dimmer and blinks twice. Critical and Medium also ring the Cue Companion phone like a call.</p>
         <div id="tier-rows"></div>
       </section>
       <footer>Double-tap the glasses temple to exit.</footer>
@@ -82,49 +82,50 @@ export function setMic(text: string) {
 }
 
 function injectStyles() {
-  // ER brand dark-theme surfaces: #232323 / #2E2E2E / #3E3E3E.
-  // ER OS green (#3CFA44) + signal red (#FF453A) for state chips.
+  // Cue brand: sun-on-haze background, black ink, one accent. Lens mirror stays dark with HUD green.
   const css = `
-    :root { color-scheme: dark; }
-    html, body { margin: 0; min-height: 100%; background: #232323; color: #E5E5E5;
+    :root { color-scheme: light; }
+    html, body { margin: 0; min-height: 100%; color: #000000;
+      background: linear-gradient(135deg, #d3dbe8 0%, #eef1f5 100%) fixed;
       font: 16px/1.4 -apple-system, BlinkMacSystemFont, 'Helvetica Neue', system-ui, sans-serif;
       touch-action: manipulation; -webkit-text-size-adjust: 100%;
       overscroll-behavior: none; }
     #app { display: flex; }
     .panel { display: flex; flex-direction: column; gap: 16px;
       width: 100%; max-width: 640px; margin: 0 auto; padding: 24px; box-sizing: border-box; }
-    header { display: flex; align-items: center; justify-content: space-between; }
-    h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: 0.02em; }
+    header { display: flex; align-items: center; justify-content: space-between;
+      border-top: 4px solid #f2b64c; padding-top: 12px; }
+    h1 { font-size: 20px; font-weight: 500; margin: 0; font-family: Georgia, 'Times New Roman', serif; }
     .status { font-size: 12px; padding: 4px 10px; border-radius: 999px;
-      border: 1px solid transparent; letter-spacing: 0.04em; text-transform: uppercase; }
-    .status-connecting { color: #A7A7A7; border-color: #3E3E3E; }
-    .status-listening  { color: #3CFA44; border-color: #3CFA44; background: rgba(60,250,68,0.08); }
-    .status-paused     { color: #E5E5E5; border-color: #7B7B7B; background: rgba(229,229,229,0.06); }
-    .status-error      { color: #FF453A; border-color: #FF453A; background: rgba(255,69,58,0.08); }
-    .transcript { overflow: auto; background: #2E2E2E; border: 1px solid #3E3E3E;
-      color: #E5E5E5;
+      border: 1px solid #c5cdd9; letter-spacing: 0.04em; text-transform: uppercase; color: #4a5262; }
+    .status-listening  { color: #000000; border-color: #000000; }
+    .status-paused     { color: #4a5262; }
+    .status-error      { color: #b3261e; border-color: #b3261e; }
+    .transcript { overflow: auto; background: #1a1d1a; border: 1px solid #1a1d1a; color: #5ee07a;
+      font-family: ui-monospace, 'SF Mono', Menlo, monospace;
       border-radius: 12px; padding: 20px; font-size: 18px; line-height: 1.5;
       min-height: 120px; white-space: pre-wrap; word-break: break-word; }
-    .interim { color: #919191; font-size: 14px; }
-    .label { font-size: 11px; color: #7B7B7B; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 8px; }
-    footer { font-size: 12px; color: #7B7B7B; text-align: center; }
-    .tier-text-critical { color: #FF453A; font-weight: 600; }
-    .tier-text-medium { color: #FF9F0A; font-weight: 600; }
-    .tier-text-normal { color: #E5E5E5; }
-    .tiers { background: #2E2E2E; border: 1px solid #3E3E3E; border-radius: 12px; padding: 16px 20px; }
-    .hint { font-size: 12px; color: #919191; margin: 4px 0 12px; }
+    .transcript .label { color: #7a847a; }
+    .interim { color: #2f5a3a; font-size: 14px; }
+    .label { font-size: 11px; color: #4a5262; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 8px; }
+    footer { font-size: 12px; color: #4a5262; text-align: center; }
+    .tier-text-critical { color: #5ee07a; font-weight: 600; }
+    .tier-text-medium { color: #5ee07a; }
+    .tier-text-normal { color: #2f5a3a; }
+    .tiers { border-top: 1px solid #c5cdd9; padding: 16px 0 0; }
+    .tiers .tier-text-critical, .tiers .tier-text-medium { color: #000000; }
+    .tiers .tier-text-normal { color: #4a5262; }
+    .hint { font-size: 12px; color: #4a5262; margin: 4px 0 12px; }
     .tier-row { display: flex; align-items: center; justify-content: space-between; gap: 8px;
-      padding: 8px 0; border-top: 1px solid #3E3E3E; flex-wrap: wrap; }
+      padding: 8px 0; border-top: 1px solid #c5cdd9; flex-wrap: wrap; }
     .tier-name { font-size: 15px; }
-    .tier-name small { color: #7B7B7B; font-weight: 400; }
+    .tier-name small { color: #4a5262; font-weight: 400; }
     .tier-picker { display: flex; gap: 4px; }
     .tier-btn { font: inherit; font-size: 12px; padding: 6px 10px; border-radius: 999px;
-      border: 1px solid #3E3E3E; background: transparent; color: #A7A7A7; }
+      border: 1px solid #c5cdd9; background: transparent; color: #4a5262; }
     .tier-btn:disabled { opacity: 0.4; }
     .tier-btn.on:disabled { opacity: 1; }
-    .tier-critical.on { color: #FF453A; border-color: #FF453A; background: rgba(255,69,58,0.12); }
-    .tier-medium.on { color: #FF9F0A; border-color: #FF9F0A; background: rgba(255,159,10,0.12); }
-    .tier-normal.on { color: #E5E5E5; border-color: #7B7B7B; background: rgba(229,229,229,0.08); }
+    .tier-btn.on { color: #000000; border-color: #000000; background: rgba(0,0,0,0.06); }
   `
   const style = document.createElement('style')
   style.textContent = css

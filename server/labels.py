@@ -1,4 +1,4 @@
-"""YAMNet class names to Earshot labels, and the knobs for when a label counts.
+"""YAMNet class names to Cue labels, and the knobs for when a label counts.
 
 Class names are exactly as they appear in the label list inside the iPhone
 app's yamnet.tflite (521 classes). Edit THRESHOLD, HITS and COOLDOWN_S at

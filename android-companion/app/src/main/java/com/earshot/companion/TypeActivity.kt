@@ -165,7 +165,7 @@ class TypeActivity : Activity() {
         if (text.isEmpty()) return
         val service = BridgeService.instance
         if (service == null) {
-            status.text = "Not sent: the Earshot service is not running."
+            status.text = "Not sent: the Cue service is not running."
             return
         }
         val peers = service.sendTypedText(text)
