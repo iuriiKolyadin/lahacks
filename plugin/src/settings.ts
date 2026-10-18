@@ -11,7 +11,7 @@ import type { HudState } from './link'
 export type Tier = 'urgent' | 'important' | 'normal'
 export type Label = NonNullable<HudState['label']>
 
-export const LABELS: Label[] = ['alarm', 'siren', 'name', 'doorbell', 'knock', 'horn', 'dog', 'speech']
+export const LABELS: Label[] = ['alarm', 'siren', 'name', 'doorbell', 'knock', 'horn', 'dog', 'clap', 'snap', 'speech']
 export const LOCKED: ReadonlySet<Label> = new Set(['alarm', 'siren'])
 
 const DEFAULTS: Record<Label, Tier> = {
@@ -22,6 +22,8 @@ const DEFAULTS: Record<Label, Tier> = {
   knock: 'important',
   horn: 'important',
   dog: 'normal',
+  clap: 'normal',
+  snap: 'normal',
   speech: 'normal',
 }
 

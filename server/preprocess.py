@@ -15,7 +15,7 @@ RATE = 16000
 HPF_HZ = 600.0
 HPF_STAGES = 2
 TARGET_RMS = 0.05
-MAX_GAIN = 30.0
+MAX_GAIN = 10.0
 
 
 def _coefs(fc: float, fs: int = RATE, q: float = 1 / math.sqrt(2)):

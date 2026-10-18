@@ -44,8 +44,9 @@ our labels), and once a second the glasses' `direction` and `speakerRole`
 ## Tuning
 
 `labels.py` holds the YAMNet-to-label map, the score `THRESHOLD` per label,
-`MIN_HITS` (consecutive 0.5 s windows before a label fires), and `COOLDOWN_S`
-(minimum gap before the same cue shows again). Timings for the alarm hold,
+`HITS` (a label fires only when `needed` of the last `out_of` 0.5 s windows
+pass; default 2 of 3, about 1 s of sustained sound), and `COOLDOWN_S` (minimum
+gap before the same cue shows again). Timings for the alarm hold,
 cue length and speech fade are at the top of `state.py`.
 
 ## iPhone app

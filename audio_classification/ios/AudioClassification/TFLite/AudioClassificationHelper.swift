@@ -233,13 +233,13 @@ class AudioClassificationHelper {
 ///
 /// The G2 stream is dominated by rumble below 300 Hz, about 35 dB louder than the 1 to 4 kHz band
 /// where alarms, sirens and doorbells live, so raw it classifies as Music/Throbbing/Hum. Two
-/// Butterworth high-pass biquads at 600 Hz, then per-window gain to a target RMS, capped so
+/// Butterworth high-pass biquads at 600 Hz, then per-window gain to a target RMS, capped at 10x so
 /// silence is not blown up into noise.
 final class GlassesAudioFilter {
   static let cutoffHz = 600.0
   static let stages = 2
   static let targetRMS: Float = 0.05
-  static let maxGain: Float = 30
+  static let maxGain: Float = 10
 
   private let b0, b1, b2, a1, a2: Double
   /// Per stage: x1, x2, y1, y2. Carried across frames, so feed every frame in order.

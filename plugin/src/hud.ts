@@ -66,24 +66,34 @@ function centerBlock(lines: string[]): string {
   return '\n'.repeat(top) + lines.map(centerLine).join('\n')
 }
 
-// Arrow goes on the side the sound came from; behind/front are spelled out; near has none.
-function withDir(label: string, dir: HudState['dir']): string {
+// Arrow lines point where the sound came from: a horizontal line beside the
+// label for left and right, a vertical one above (front) or below (behind) it.
+// near has none. ASCII only: the firmware font's other glyphs are unverified.
+const ARROW_LEFT = '<-----'
+const ARROW_RIGHT = '----->'
+const ARROW_UP = ['^', '|']
+const ARROW_DOWN = ['|', 'v']
+
+// Display text for a label; the server's ids are short.
+const SHOW: Partial<Record<NonNullable<HudState['label']>, string>> = { clap: 'clapping', snap: 'snap' }
+
+function withDir(label: string, dir: HudState['dir']): string[] {
   switch (dir) {
-    case 'left': return `<-  ${label}`
-    case 'right': return `${label}  ->`
-    case 'behind': return `${label}  (behind)`
-    case 'front': return `${label}  (front)`
-    default: return label
+    case 'left': return [`${ARROW_LEFT}  ${label}`]
+    case 'right': return [`${label}  ${ARROW_RIGHT}`]
+    case 'front': return [...ARROW_UP, label]
+    case 'behind': return [label, ...ARROW_DOWN]
+    default: return [label]
   }
 }
 
-function dirOnly(dir: HudState['dir']): string {
+function dirOnly(dir: HudState['dir']): string[] {
   switch (dir) {
-    case 'left': return '<-'
-    case 'right': return '->'
-    case 'behind': return '(behind)'
-    case 'front': return '(front)'
-    default: return ''
+    case 'left': return [ARROW_LEFT]
+    case 'right': return [ARROW_RIGHT]
+    case 'front': return ARROW_UP
+    case 'behind': return ARROW_DOWN
+    default: return []
   }
 }
 
@@ -102,13 +112,12 @@ export function tierFor(s: HudState): Tier {
 export function linesFor(s: HudState): string[] {
   const caps = (t: string) => (tierFor(s) === 'normal' ? t : t.toUpperCase())
   switch (s.state) {
-    case 'cue': return [withDir(caps(s.label ?? ''), s.dir)]
-    case 'speech': return [withDir(caps('speech'), s.dir)]
-    case 'name': return [withDir('YOUR NAME', s.dir)]
+    case 'cue': return withDir(caps((s.label && SHOW[s.label]) ?? s.label ?? ''), s.dir)
+    case 'speech': return withDir(caps('speech'), s.dir)
+    case 'name': return withDir('YOUR NAME', s.dir)
     case 'alarm': {
       const head = s.label === 'siren' ? 'SIREN' : 'ALARM'
-      const d = dirOnly(s.dir)
-      return d ? [head, d] : [head]
+      return [head, ...dirOnly(s.dir)]
     }
     default: return []
   }
@@ -235,6 +244,8 @@ export const DEMO_STATES: HudState[] = [
   { state: 'idle' },
   { state: 'cue', label: 'doorbell', dir: 'right', ttl_ms: 0, level: 4 },
   { state: 'speech', label: 'speech', dir: 'left', ttl_ms: 0, level: 2 },
+  { state: 'cue', label: 'knock', dir: 'front', ttl_ms: 0, level: 4 },
   { state: 'name', label: 'name', dir: 'left', ttl_ms: 0, level: 4 },
+  { state: 'cue', label: 'snap', dir: 'behind', ttl_ms: 0, level: 4 },
   { state: 'alarm', label: 'siren', dir: 'behind', ttl_ms: 0, level: 4 },
 ]

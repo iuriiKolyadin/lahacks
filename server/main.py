@@ -18,6 +18,7 @@ import asyncio
 import itertools
 import json
 import os
+import sys
 import time
 from collections import OrderedDict
 from contextlib import asynccontextmanager
@@ -27,7 +28,8 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 import labels
-from state import StateMachine, direction_from_tag
+import direction
+from state import StateMachine
 
 TICK_S = 0.1
 MOCK_STATES = [
@@ -37,6 +39,26 @@ MOCK_STATES = [
     {"state": "name", "label": "name", "dir": "left", "ttl_ms": 4000, "level": 4},
     {"state": "alarm", "label": "siren", "dir": "near", "ttl_ms": 0, "level": 4},
 ]
+
+
+def frame_rms(pcm_b64: str) -> float:
+    """RMS of the sample-to-sample difference of one base64 int16 LE frame.
+
+    Weights the direction estimate. The difference is a cheap high-pass, so the
+    G2's loud sub-300 Hz rumble does not outweigh the alarm or knock being cued.
+    """
+    import array
+    import base64
+
+    try:
+        a = array.array("h", base64.b64decode(pcm_b64))
+    except ValueError:
+        return 0.0
+    if sys.byteorder != "little":
+        a.byteswap()
+    if len(a) < 2:
+        return 0.0
+    return (sum((a[i] - a[i - 1]) ** 2 for i in range(1, len(a))) / (len(a) - 1)) ** 0.5
 
 
 def log(*parts):
@@ -78,7 +100,7 @@ class Hub:
         self.frame = {"state": "idle"}
         self.speaker_role = "unknown"
         self.direction_tag = None
-        self.direction_at = 0.0
+        self.dir_tracker = direction.DirectionTracker()
         self.audio_frames = 0
         self.results = 0
         self.last_result = None
@@ -98,9 +120,10 @@ class Hub:
         now = time.time()
         self.audio_frames += 1
         self.speaker_role = msg.get("speakerRole") or "unknown"
-        if msg.get("direction") is not None:
-            self.direction_tag = msg["direction"]
-            self.direction_at = now
+        tag = msg.get("direction")
+        if tag is not None:
+            self.direction_tag = tag
+        self.dir_tracker.add(tag, frame_rms(msg.get("pcm", "")), now)
         ts = msg.get("ts")
         if ts is not None:
             self.recv_at[ts] = now
@@ -114,7 +137,12 @@ class Hub:
         t["dirs"].add(msg.get("direction"))
         t["roles"].add(self.speaker_role)
         if now - t["t0"] >= 1.0:
-            log(f"TIER0 {t['frames']} frames/s direction={sorted(t['dirs'], key=str)} speakerRole={sorted(t['roles'])}")
+            ang = self.dir_tracker.angle(now)
+            est = "none" if ang is None else f"{ang:+.0f} deg -> {direction.side_from_angle(ang)}"
+            log(
+                f"TIER0 {t['frames']} frames/s direction={sorted(t['dirs'], key=str)} "
+                f"loud={est} speakerRole={sorted(t['roles'])}"
+            )
             self.tier0 = {"frames": 0, "dirs": set(), "roles": set(), "t0": now}
 
     def on_result(self, msg: dict):
@@ -123,7 +151,7 @@ class Hub:
         top = msg.get("top", [])
         self.last_result = msg
         scores = labels.scores_by_label(top)
-        self.sm.observe(scores, now, self.speaker_role)
+        self.sm.observe(scores, now, self.speaker_role, self.dir_tracker.side(now))
         sent = self.recv_at.get(msg.get("ts"))
         rtt = f"{(now - sent) * 1000:4.0f}ms" if sent else "   ?  "
         top3 = "  ".join(f"{c.get('label')}:{c.get('score', 0):.2f}" for c in top[:3])
@@ -135,14 +163,9 @@ class Hub:
         for p in self.pendants:
             p.send(raw)
 
-    def current_direction(self, now: float) -> str:
-        if now - self.direction_at > 1.0:
-            return "near"
-        return direction_from_tag(self.direction_tag)
-
     async def tick_loop(self):
         while True:
-            frame = self.sm.step(time.time(), self.current_direction(time.time()))
+            frame = self.sm.step(time.time())
             if frame is not None:
                 self.broadcast_state(frame)
             await asyncio.sleep(TICK_S)
@@ -177,6 +200,8 @@ def make_app(hub: Hub) -> FastAPI:
             "last_result": hub.last_result,
             "speaker_role": hub.speaker_role,
             "direction_tag": hub.direction_tag,
+            "direction_deg": hub.dir_tracker.angle(),
+            "direction": hub.dir_tracker.side(),
         }
 
     async def serve(ws: WebSocket, pool: set, name: str, on_text):
@@ -194,7 +219,10 @@ def make_app(hub: Hub) -> FastAPI:
                 except ValueError:
                     log(f"{name}: bad json {raw[:80]!r}")
                     continue
-                on_text(raw, msg)
+                try:
+                    on_text(raw, msg)
+                except Exception as err:  # a bug handling one frame must not drop the socket
+                    log(f"{name}: error handling frame: {err!r}")
         except WebSocketDisconnect:
             pass
         finally:

@@ -12,7 +12,14 @@ Priority: alarm > name > cue > speech > idle.
   not re-cued within its COOLDOWN_S.
 - speech (not the wearer's own) holds while detected and fades SPEECH_FADE_S
   after the last detection.
+
+Direction (left/right/front/behind/near) is passed in with each window. A cue
+or name keeps the direction it started with, so the arrow does not jitter
+while it is up; an alarm shows the most common of its last 3 detections; speech
+follows the latest.
 """
+
+from collections import Counter, deque
 
 import labels as L
 
@@ -26,87 +33,91 @@ SPEECH_FADE_S = 3.0
 IDLE = {"state": "idle"}
 
 
-def direction_from_tag(tag: int | None) -> str:
-    """Map the G2's raw `direction` int16 to a side.
-
-    Tier 0 is undecided until the direction test in docs/direction-test.md.
-    Until it has thresholds, every cue is `near` (no arrow).
-    """
-    return "near"
-
-
 class StateMachine:
-    def __init__(self, threshold=None, min_hits=None, cooldown_s=None):
+    def __init__(self, threshold=None, hits=None, cooldown_s=None):
         self.threshold = threshold or L.THRESHOLD
-        self.min_hits = min_hits or L.MIN_HITS
+        self.need = {label: (hits or L.HITS).get(label, (1, 1)) for label in self.threshold}
         self.cooldown_s = cooldown_s or L.COOLDOWN_S
-        self.hits = {label: 0 for label in self.threshold}
+        self.recent = {label: deque(maxlen=self.need[label][1]) for label in self.threshold}
         self.alarm_label = None
         self.alarm_last = float("-inf")
+        self.alarm_dirs: deque[str] = deque(maxlen=3)
         self.name_until = float("-inf")
+        self.name_dir = "near"
         self.cue_label = None
         self.cue_until = float("-inf")
+        self.cue_dir = "near"
         self.cue_started: dict[str, float] = {}
         self.speech_last = float("-inf")
+        self.speech_dir = "near"
         self.last_frame = IDLE
 
     def alarm_active(self, now: float) -> bool:
         return now - self.alarm_last <= ALARM_HOLD_S
 
-    def observe(self, scores: dict[str, float], now: float, speaker_role: str = "unknown") -> None:
-        """Take one classifier window: {our label: score}."""
+    def observe(
+        self, scores: dict[str, float], now: float, speaker_role: str = "unknown", direction: str = "near"
+    ) -> None:
+        """Take one classifier window: {our label: score}, and where the sound came from."""
         fired = []
         for label, thr in self.threshold.items():
-            if scores.get(label, 0.0) >= thr:
-                self.hits[label] += 1
-            else:
-                self.hits[label] = 0
-            if self.hits[label] >= self.min_hits.get(label, 1):
+            self.recent[label].append(scores.get(label, 0.0) >= thr)
+            if sum(self.recent[label]) >= self.need[label][0]:
                 fired.append(label)
 
         alarms = [l for l in fired if l in L.ALARM_LABELS]
         if alarms:
             if not self.alarm_active(now):
                 self.cue_label = None  # an alarm wipes whatever cue was up
-            self.alarm_label = max(alarms, key=lambda l: scores[l])
+            # a label can fire on an earlier window's hits, so its score here may be missing
+            self.alarm_label = max(alarms, key=lambda l: scores.get(l, 0.0))
+            if not self.alarm_active(now):
+                self.alarm_dirs.clear()
             self.alarm_last = now
+            self.alarm_dirs.append(direction)
             return
         if self.alarm_active(now):
             return  # R2: everything else suppressed while the alarm holds
 
         cues = [l for l in fired if l in L.CUE_LABELS and self._off_cooldown(l, now)]
         if cues:
-            label = max(cues, key=lambda l: scores[l])
+            label = max(cues, key=lambda l: scores.get(l, 0.0))
             self.cue_label = label
             self.cue_until = now + CUE_TTL_S
             self.cue_started[label] = now
+            self.cue_dir = direction
 
         if "speech" in fired and speaker_role != "self":
             self.speech_last = now
+            self.speech_dir = direction
 
-    def name_detected(self, now: float) -> None:
+    def name_detected(self, now: float, direction: str = "near") -> None:
         if not self.alarm_active(now):
             self.name_until = now + NAME_TTL_S
+            self.name_dir = direction
 
     def _off_cooldown(self, label: str, now: float) -> bool:
         started = self.cue_started.get(label)
         return started is None or now - started >= self.cooldown_s.get(label, 0.0)
 
-    def current(self, now: float, direction: str = "near") -> dict:
+    def current(self, now: float) -> dict:
         """What the HUD should show right now."""
         if self.alarm_active(now):
-            return {"state": "alarm", "label": self.alarm_label, "dir": direction, "ttl_ms": 0, "level": 4}
+            # most common of the last 3; ties go to the most recent
+            counts = Counter(self.alarm_dirs)
+            best = max(reversed(self.alarm_dirs), key=lambda d: counts[d])
+            return {"state": "alarm", "label": self.alarm_label, "dir": best, "ttl_ms": 0, "level": 4}
         if now < self.name_until:
-            return {"state": "name", "label": "name", "dir": direction, "ttl_ms": int(NAME_TTL_S * 1000), "level": 4}
+            return {"state": "name", "label": "name", "dir": self.name_dir, "ttl_ms": int(NAME_TTL_S * 1000), "level": 4}
         if self.cue_label is not None and now < self.cue_until:
-            return {"state": "cue", "label": self.cue_label, "dir": direction, "ttl_ms": int(CUE_TTL_S * 1000), "level": 4}
+            return {"state": "cue", "label": self.cue_label, "dir": self.cue_dir, "ttl_ms": int(CUE_TTL_S * 1000), "level": 4}
         if now - self.speech_last <= SPEECH_FADE_S:
-            return {"state": "speech", "label": "speech", "dir": direction, "ttl_ms": 0, "level": 2}
+            return {"state": "speech", "label": "speech", "dir": self.speech_dir, "ttl_ms": 0, "level": 2}
         return IDLE
 
-    def step(self, now: float, direction: str = "near") -> dict | None:
+    def step(self, now: float) -> dict | None:
         """The new frame if the HUD should change, else None."""
-        frame = self.current(now, direction)
+        frame = self.current(now)
         if frame == self.last_frame:
             return None
         self.last_frame = frame
