@@ -54,12 +54,14 @@ Judge wears the G2. HUD is blank. A teammate:
 
 | # | does | judge sees |
 |---|---|---|
-| 1 | plays a doorbell clip on the right | `doorbell  ----->` for 4 s, then blank |
-| 2 | claps once on the left | `<-----  clapping` for 4 s, then blank |
-| 3 | plays a smoke alarm clip | full screen `ALARM` until it stops |
-| 4 | snaps fingers by the right ear | `snap  ----->` |
-| 5 | talks normally | `speech  <-----` while talking, fades after 3 s |
-| 6 | hands the glasses to the next judge | nothing to set up |
+| 1 | plays a siren clip from a speaker on the right | full screen `SIREN` with `----->`, held while it plays, then blank |
+| 2 | plays a dog bark on the left | `<-----  dog bark` for 4 s, then blank |
+| 3 | talks to the judge normally | `speech  <-----` while talking, fades 3 s after |
+| 4 | hands the glasses to the next judge | nothing to set up |
+
+Three sounds, chosen because all three detect reliably through the glasses:
+siren 3 of 3 and dog 3 of 3 in the eval, and speech is YAMNet's strongest
+class. The wearer's own voice does not trigger the speech cue.
 
 ## 5. How it works
 
@@ -155,7 +157,8 @@ more often than not; the glasses cannot tell front from behind.
 | Sat 23:20 | direction window 1 s to 3 s, vote with peak-loud frames | snaps read "center" because room frames outvoted them |
 | Sat 23:40 | pair each frame's loudness with the previous frame's tag | 16 snaps showed the tag leads its audio by one frame; 4/10 became 8/10 |
 | Sun 07:55 | remove the second glasses app | an on-phone YAMNet scaffold at milestone 0; one app ships |
-| Sun 09:00 | keep the single filtered classifier path; demo with alarm, siren, dog, clap and snap | the two-path fix for knocks was measured but changing the phone app before noon was not worth the risk |
+| Sun 09:00 | keep the single filtered classifier path | the two-path fix for knocks was measured but changing the phone app before noon was not worth the risk |
+| Sun 09:15 | demo is siren, dog bark, speech | the three sounds that detect every time through the glasses; alarm clips sound like sirens to a judge anyway |
 
 ## 9. Known limitations
 
