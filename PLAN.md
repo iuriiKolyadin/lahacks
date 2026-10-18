@@ -288,46 +288,36 @@ ship without the arrow.
 
 ### 4.4 Dara: measurement, glasses, submission (`tools/`, `docs/`, Devpost)
 
-Away 6 to 9. Everything here either happens before 6, after 9, or runs on
-files other people push.
+Away until 9. Nothing here starts before then. Two things the team covers
+in the meantime:
 
-Setup:
-```bash
-cd ~/Projects/lahacks && mkdir -p tools
-python3.12 -m venv .venv && source .venv/bin/activate
-pip install websockets numpy soundfile tensorflow
-npm i -g @evenrealities/evenhub-cli
-```
-Even app 2.2.10 or newer, signed in, developer access on at
-https://evenhub.evenrealities.com, then fully quit and reopen the phone app.
-Auto lock Never. Devpost project with all four and the challenges Even
-Realities, Beyond the Digital, Applied Intelligence.
-
-Before 6:
-1. Hotspot on the second phone; your iPhone and Wendy's phone join it.
-2. Go to the Even table (open until 8). Ask whether `AudioEvent.direction`
-   carries data on current firmware and in what unit, confirm the Beta group
-   flow, and ask whether "sound awareness for deaf users" is considered
-   medical. It should not be; hear them say it.
-3. Devpost project created, the PRD demo table turned into the description.
+- Hotspot: Iurii or Nikhil turns one on now, so the phone with the glasses and
+  Nikhil's laptop are on the same network for integration.
+- The Even table closes at 8. Whoever is nearest asks: does
+  `AudioEvent.direction` carry data on current firmware, and in what unit?
+  And is "sound awareness for deaf users" considered a medical app? It should
+  not be. Post the answers in the chat.
 
 After 9, code:
-4. `tools/record.py`. A WebSocket server on port 8000 that accepts the
+3. `tools/record.py`. A WebSocket server on port 8000 that accepts the
    plugin's frames and writes `--out name.wav` (16 kHz mono) and `name.jsonl`
    with `ts`, `direction`, `speakerRole`, RMS per frame. Point the plugin at
    your laptop, record 30 s each of silence, a doorbell, a siren, knocks,
    and someone talking from four sides. These are the ground truth clips.
-5. `tools/eval.py`. Loads YAMNet itself (same 20 lines as Nikhil's
+4. `tools/eval.py`. Loads YAMNet itself (same 20 lines as Nikhil's
    `classify.py`, copied, so this never depends on his code being in a
    runnable state) and runs every WAV in `server/clips/` and your recordings
    in 0.5 s steps. Prints expected label, top label, top score, and time to
    first correct, then a confusion table. This is where the pitch numbers and
    the threshold choices come from.
-6. If the Tier 0 numbers in `docs/direction-test.md` separate by position,
+5. If the Tier 0 numbers in `docs/direction-test.md` separate by position,
    write the mapping from the tag to left, right, front, behind and send it
    to Nikhil in the chat.
 
 After 9, integration and submission:
+6. Devpost project: create it, add all four, select the challenges Even
+   Realities, Beyond the Digital, Applied Intelligence, paste the PRD demo
+   table as the description.
 7. Nikhil's laptop runs `python main.py`; Wendy's `app.json` whitelist gets
    Nikhil's IP; the ESP32 posts to Nikhil's IP. Run the demo script from the
    PRD start to finish. Film it rough; that is the backup video.
