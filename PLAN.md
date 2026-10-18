@@ -22,9 +22,9 @@ Git: everyone on `main`, small commits, `git pull --rebase` before pushing.
 Edit only your own folder. If you are stuck for 20 minutes, say so in the
 chat.
 
-Glasses while Dara is away: Dara leaves the G2 and the iPhone with Wendy from
-6 to 9 if possible, with the Even app signed in and auto lock off. Otherwise
-Wendy works in the simulator until 9.
+Glasses: Wendy has her own G2 and phone, already paired, so she tests on real
+hardware all evening. Dara's pair is the second set, used for the Beta install
+and the demo. Two pairs also means two judges can try it at once.
 
 Words used below:
 
@@ -304,8 +304,7 @@ Auto lock Never. Devpost project with all four and the challenges Even
 Realities, Beyond the Digital, Applied Intelligence.
 
 Before 6:
-1. Hotspot on the second phone; the iPhone joins; leave the G2 and the iPhone
-   with Wendy if you can.
+1. Hotspot on the second phone; your iPhone and Wendy's phone join it.
 2. Go to the Even table (open until 8). Ask whether `AudioEvent.direction`
    carries data on current firmware and in what unit, confirm the Beta group
    flow, and ask whether "sound awareness for deaf users" is considered
