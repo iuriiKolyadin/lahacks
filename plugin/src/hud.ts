@@ -78,34 +78,37 @@ function centerBlock(lines: string[]): string {
 // both. near has none. ASCII only: the firmware font's other glyphs are unverified.
 const ARROW_LEFT = '<-----'
 const ARROW_RIGHT = '----->'
-const ARROW_UP = ['^', '|']
-const ARROW_DOWN = ['|', 'v']
+const ARROW_UP = ['^', '|', '|']
+const ARROW_DOWN = ['|', '|', 'v']
 
 // Display text for a label; the server's ids are short.
 const SHOW: Partial<Record<NonNullable<HudState['label']>, string>> = { clap: 'clapping', snap: 'snap' }
 
 // The label as its tier draws it: critical is S P A C E D capitals between two
 // bars (the closest thing to a bigger font), medium is capitals, normal is as is.
-function styled(text: string, tier: Tier): string[] {
+// Alarm and siren are plain capitals: the word itself is the emphasis, and the
+// arrows must touch it.
+function styled(text: string, tier: Tier, plain = false): string[] {
   if (tier === 'normal') return [text]
   const caps = text.toUpperCase()
-  if (tier === 'medium') return [caps]
+  if (tier === 'medium' || plain) return [caps]
   const spaced = caps.split('').join(' ')
   const bar = '='.repeat(Math.max(3, Math.ceil(textPx(spaced) / textPx('='))))
   return [bar, spaced, bar]
 }
 
-// Side arrows go on the label's own line (the middle line of a framed block);
-// the up arrow goes above the whole block and the down arrow below it.
+// Side arrows go on the label's own line. Vertical arrows sit directly above
+// and below the label, so a framed block drops its bars for them (the bars
+// would come between arrow and word, and 3 + 3 + 3 lines would not fit the 8
+// rows of the display).
 function withDir(block: string[], dir: HudState['dir']): string[] {
-  const mid = Math.floor(block.length / 2)
-  const side = (f: (s: string) => string) => block.map((l, i) => (i === mid ? f(l) : l))
+  const label = block[Math.floor(block.length / 2)]
   switch (dir) {
-    case 'left': return side(l => `${ARROW_LEFT}  ${l}`)
-    case 'right': return side(l => `${l}  ${ARROW_RIGHT}`)
-    case 'front': return [...ARROW_UP, ...block]
-    case 'behind': return [...block, ...ARROW_DOWN]
-    case 'center': return [...ARROW_UP, ...block, ...ARROW_DOWN]
+    case 'left': return block.map(l => (l === label ? `${ARROW_LEFT}  ${l}` : l))
+    case 'right': return block.map(l => (l === label ? `${l}  ${ARROW_RIGHT}` : l))
+    case 'front': return [...ARROW_UP, label]
+    case 'behind': return [label, ...ARROW_DOWN]
+    case 'center': return [...ARROW_UP, label, ...ARROW_DOWN]
     default: return block
   }
 }
@@ -128,7 +131,7 @@ export function linesFor(s: HudState): string[] {
     case 'cue': return withDir(styled((s.label && SHOW[s.label]) ?? s.label ?? '', tier), s.dir)
     case 'speech': return withDir(styled('speech', tier), s.dir)
     case 'name': return withDir(styled('your name', tier === 'normal' ? 'medium' : tier), s.dir)
-    case 'alarm': return withDir(styled(s.label === 'siren' ? 'siren' : 'alarm', tier), s.dir)
+    case 'alarm': return withDir(styled(s.label === 'siren' ? 'siren' : 'alarm', tier, true), s.dir)
     default: return []
   }
 }
