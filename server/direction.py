@@ -7,7 +7,7 @@ time-difference estimate, which gives one axis only: it can separate the two
 sides of the mic pair, but a sound and its mirror image across that axis read
 the same. So if the pair is left/right, front and behind both read near 0.
 
-Calibrate with the direction test (PLAN.md 4.3 step 6): the server's TIER0 log
+Calibrate with the snap test (docs/direction-test.md): the server's TIER0 log
 line and GET / show the live estimate. Set SIGN so that a sound on the
 wearer's left gives "left". Front and behind cannot be told apart, so a
 centered angle is "center", which the plugin draws as a double vertical arrow

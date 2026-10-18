@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Earshot brand board</title>
+<style>
+  :root{--paper:#f4f4f4;--paper2:#e9e9e9;--ink:#232323;--g50:#919191;--g70:#656565;--g30:#bdbdbd;--g20:#d3d3d3;--hud:#5ee07a;--hudpaper:#6aa870;--lens:#1a1d1a}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-weight:300;-webkit-font-smoothing:antialiased}
+  .wrap{width:1600px;margin:0 auto;padding:64px 72px}
+  h1{font-weight:300;font-size:56px;letter-spacing:-.02em;margin:0 0 8px}
+  .lede{font-size:20px;color:var(--g70);max-width:760px;line-height:1.4;margin:0 0 56px}
+  h2{font-weight:400;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--g50);margin:0 0 20px;padding-top:28px;border-top:1px solid var(--g20)}
+  .row{display:flex;gap:16px;margin-bottom:56px}
+  .sw{flex:1;height:150px;border:1px solid var(--g20);display:flex;flex-direction:column;justify-content:flex-end;padding:14px;font-size:13px;line-height:1.35}
+  .sw b{font-weight:400;display:block}
+  .sw span{color:var(--g70)}
+  .sw.dark span,.sw.dark b{color:#bdbdbd}
+  .type{display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-bottom:56px}
+  .spec{border-top:1px solid var(--g20);padding-top:16px}
+  .spec .big{font-size:88px;font-weight:300;letter-spacing:-.03em;line-height:1;margin:0 0 10px}
+  .spec .mid{font-size:34px;font-weight:300;line-height:1.2;margin:0 0 10px;color:var(--ink)}
+  .spec .sm{font-size:18px;line-height:1.45;color:var(--g70);margin:0 0 10px}
+  .spec .mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:18px;color:var(--hudpaper)}
+  .spec small{display:block;font-size:12px;color:var(--g50);letter-spacing:.08em;text-transform:uppercase;margin-top:14px}
+  .rules{columns:2;gap:48px;font-size:17px;line-height:1.55;color:var(--ink);margin-bottom:56px}
+  .rules p{margin:0 0 14px;break-inside:avoid}
+  .rules p::before{content:"";display:inline-block;width:18px;height:1px;background:var(--g50);margin:0 12px 5px 0}
+  /* sample slides */
+  .slides{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .slide{aspect-ratio:16/9;background:#fff;border:1px solid var(--g20);position:relative;overflow:hidden;padding:5% 6%}
+  .slide .k{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--g50);position:absolute;top:5%;left:6%}
+  .slide .photo{position:absolute;inset:0;background:var(--paper2);display:flex;align-items:center;justify-content:center;color:var(--g50);font-size:14px;text-align:center;line-height:1.5}
+  .slide .title{position:absolute;left:6%;bottom:8%;font-size:52px;font-weight:300;letter-spacing:-.02em;line-height:1.05;max-width:60%}
+  .slide .sub{position:absolute;right:6%;bottom:8%;font-size:14px;color:var(--g70);max-width:28%;line-height:1.45}
+  .lenscard{position:absolute;right:6%;top:14%;width:38%;aspect-ratio:2/1;background:var(--lens);border-radius:10px;display:flex;align-items:center;justify-content:center}
+  .lenscard span{font-family:ui-monospace,"SF Mono",Menlo,monospace;color:var(--hud);font-size:22px;letter-spacing:.06em;text-shadow:0 0 12px rgba(94,224,122,.5)}
+  .slide .h{font-size:34px;font-weight:300;letter-spacing:-.02em;line-height:1.1;margin:28px 0 20px;max-width:50%}
+  .stat{display:flex;gap:48px}
+  .stat div b{display:block;font-weight:300;font-size:84px;letter-spacing:-.04em;line-height:1}
+  .stat div span{display:block;font-size:13px;color:var(--g70);max-width:170px;line-height:1.4;margin-top:8px}
+  .foot{position:absolute;left:6%;right:6%;bottom:6%;border-top:1px solid var(--g20);padding-top:10px;font-size:11px;color:var(--g50);display:flex;justify-content:space-between}
+  .cap{font-size:13px;color:var(--g70);margin:10px 0 0}
+</style></head><body><div class="wrap">
+<h1>Earshot</h1>
+<p class="lede">Brand direction for the LA Hacks deck. Borrowed from how Even Realities presents the G2: pale paper, charcoal type set light, hairline rules, photographs of real people, and the display green only where the display actually is.</p>
+
+<h2>Colour</h2>
+<div class="row">
+  <div class="sw" style="background:#f4f4f4"><b>Paper</b><span>#f4f4f4 · Even gray-05 · every slide background</span></div>
+  <div class="sw" style="background:#e9e9e9"><b>Paper 2</b><span>#e9e9e9 · gray-10 · photo wells, cards</span></div>
+  <div class="sw" style="background:#d3d3d3"><b>Rule</b><span>#d3d3d3 · gray-20 · hairlines only</span></div>
+  <div class="sw" style="background:#919191"><b style="color:#fff">Quiet</b><span style="color:#f4f4f4">#919191 · gray-50 · kickers, captions</span></div>
+  <div class="sw" style="background:#656565"><b style="color:#fff">Body</b><span style="color:#e9e9e9">#656565 · gray-70 · secondary text</span></div>
+  <div class="sw dark" style="background:#232323"><b>Ink</b><span>#232323 · Even black · headings, numbers</span></div>
+  <div class="sw" style="background:#1a1d1a"><b style="color:#5ee07a;font-family:Menlo,monospace">HUD</b><span style="color:#bdbdbd">#5ee07a on #1a1d1a · only inside a lens mock or a photo</span></div>
+  <div class="sw" style="background:#6aa870"><b style="color:#fff">Green on paper</b><span style="color:#f4f4f4">#6aa870 · sampled from Even's hero photo · one accent, used rarely</span></div>
+</div>
+
+<h2>Type</h2>
+<div class="type">
+  <div class="spec">
+    <p class="big">Earshot</p>
+    <p class="mid">The glasses stay dark until a sound you can't hear matters.</p>
+    <p class="sm">Helvetica Neue Light for everything on paper. Even's site uses FK Grotesk Neue, a licensed face, and Helvetica Neue is the closest thing already installed on every Mac and in Figma. Regular weight only for the number on a stat. Nothing bold, ever.</p>
+    <small>Helvetica Neue · 300 / 400 · tracking -2% above 40 px</small>
+  </div>
+  <div class="spec">
+    <p class="mono">doorbell  -&gt;</p>
+    <p class="mono">&lt;-  YOUR NAME</p>
+    <p class="mono">ALARM</p>
+    <p class="sm">Monospace is reserved for text that is literally on the lens. It never appears in a heading or a caption, so the audience learns that monospace green means "this is what the wearer sees."</p>
+    <small>SF Mono / Menlo · the G2 renders a fixed-width face</small>
+  </div>
+</div>
+
+<h2>Rules</h2>
+<div class="rules">
+  <p>One idea per slide, stated in the headline. A stranger should get it in three seconds from the back row.</p>
+  <p>Photographs over diagrams. Every slide that can carry a photo of a person wearing the glasses, does. We shoot these this morning.</p>
+  <p>Headline top left or bottom left, never centered. Captions bottom right, small, grey.</p>
+  <p>No boxes with glowing borders, no grid texture, no gradients, no icons. Whitespace does the separating; a 1 px grey rule where it must.</p>
+  <p>Green shows up only where the display is. On paper it is a sage #6aa870, at most once per slide. Neon green only inside the dark lens mock.</p>
+  <p>Numbers are set light and huge, with a plain caption that says what the number means and where it came from.</p>
+</div>
+
+<h2>What a slide looks like</h2>
+<div class="slides">
+  <div class="slide">
+    <div class="photo">PHOTO · a teammate wearing the G2, head and shoulders, grey wall, soft daylight<br>through-the-lens inset if we get one</div>
+    <div class="title">Earshot</div>
+    <div class="sub">Sound awareness for deaf and hard of hearing people, on Even G2.<br><br>LA Hacks 2026</div>
+  </div>
+  <div class="slide">
+    <div class="k">What the wearer sees</div>
+    <div class="h">One line, four seconds, then nothing.</div>
+    <div class="lenscard"><span>doorbell  -&gt;</span></div>
+    <div class="stat" style="position:absolute;left:6%;bottom:16%"><div><b>1.0<span style="display:inline;font-size:36px;color:#919191">s</span></b><span>median from sound to lens, alarm and siren, measured on 22 clips</span></div><div><b>0</b><span>false cues across six noise clips</span></div></div>
+    <div class="foot"><span>Earshot</span><span>tools/eval.py --dual</span></div>
+  </div>
+</div>
+<p class="cap">Left: title slide with a photo well where the real photograph goes. Right: a content slide, headline first, the lens mock as the only dark object on the page, numbers set light.</p>
+</div></body></html>
