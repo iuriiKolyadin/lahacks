@@ -1,6 +1,8 @@
 # Cue
 
-![Cue on Even G2: the lens reads <----- siren](docs/deck/images/title.jpg)
+[![Cue on Even G2: the lens reads <----- siren](docs/deck/images/title.jpg)](https://youtu.be/71S9_XT-4Dg)
+
+**[Watch the demo](https://youtu.be/71S9_XT-4Dg)**, two minutes, on a real G2.
 
 Sound awareness for deaf and hard-of-hearing people, on Even Realities G2
 smart glasses.
@@ -108,6 +110,8 @@ documented, not shipped. Details and caveats in `docs/eval-2026-10-17.md` and
 `docs/direction-test.md`.
 
 ## Pitch deck
+
+Demo video: https://youtu.be/71S9_XT-4Dg
 
 ![Deaf people miss a sound every day; no glasses app shows one](docs/deck/images/problem.jpg)
 
