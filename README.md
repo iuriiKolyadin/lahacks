@@ -2,7 +2,7 @@
 
 [![Cue on Even G2: the lens reads <----- siren](docs/deck/images/title.jpg)](https://youtu.be/71S9_XT-4Dg)
 
-**[Watch the demo](https://youtu.be/71S9_XT-4Dg)**, two minutes, on a real G2.
+**[Watch the demo](https://youtu.be/71S9_XT-4Dg)** on a real G2.
 
 Sound awareness for deaf and hard-of-hearing people, on Even Realities G2
 smart glasses.
