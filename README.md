@@ -7,7 +7,7 @@
 Sound awareness for deaf and hard-of-hearing people, on Even Realities G2
 smart glasses. The glasses stay blank until a sound you cannot hear matters;
 then one line in your line of sight says what it was and which side it came
-from. [Two-minute demo on a real G2.](https://youtu.be/71S9_XT-4Dg)
+from. [Demo on a real G2.](https://youtu.be/71S9_XT-4Dg)
 
 A phone is too slow for this: by the time you take it out, the sound is over.
 The G2 is already where you are looking, and Even's built-in Conversate mode
