@@ -48,9 +48,7 @@ speech) sends one HUD frame back to the lens. The Android companion hangs off
 the plugin and is not in the sound path.
 
 No API keys, no accounts, no cloud. YAMNet and faster-whisper are open models
-running on your own devices, and the code is MIT. The one exception is opt-in:
-`--stt deepgram` swaps the offline captions for Deepgram's faster hosted ones
-and needs a key from them.
+running on your own devices.
 
 Two findings made it work. The SDK's undocumented direction tag arrives one
 frame before the audio it describes; pairing each frame with the previous tag
