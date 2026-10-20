@@ -47,6 +47,11 @@ YAMNet and gets scores back every 0.5 s, and a state machine (alarm > cue >
 speech) sends one HUD frame back to the lens. The Android companion hangs off
 the plugin and is not in the sound path.
 
+No API keys, no accounts, no cloud. YAMNet and faster-whisper are open models
+running on your own devices, and the code is MIT. The one exception is opt-in:
+`--stt deepgram` swaps the offline captions for Deepgram's faster hosted ones
+and needs a key from them.
+
 Two findings made it work. The SDK's undocumented direction tag arrives one
 frame before the audio it describes; pairing each frame with the previous tag
 took the correct side from 4 of 10 to 8 of 10. And the G2 audio stream is
@@ -127,8 +132,8 @@ Slide copy and brand notes in [`docs/deck/`](docs/deck/).
 
 - [Dara Miao](https://github.com/dara-miao), USC: evals, direction mapping, state machine spec, docs, deck.
 - [Iurii Kolyadin](https://github.com/iuriiKolyadin), UC Irvine: Android companion.
-- [Nikhil Marisetty](https://github.com/sainikhil1611), UT Dallas: hub and iPhone classifier.
-- [Wendy Wang](https://github.com/Ruiyang1210W), UCLA: Even Hub plugin and on-glasses menu.
+- [Nikhil Marisetty](https://github.com/sainikhil1611), UT Dallas: hub, iPhone classifier, on-glasses menu.
+- [Wendy Wang](https://github.com/Ruiyang1210W), UCLA: Even Hub plugin, HUD, and the plugin's test harness.
 
 ## License
 
