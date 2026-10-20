@@ -5,7 +5,7 @@
 [![Cue on Even G2: the lens reads <----- siren](docs/deck/images/title.jpg)](https://youtu.be/71S9_XT-4Dg)
 
 Sound awareness for deaf and hard-of-hearing people, on Even Realities G2
-smart glasses. The glasses stay blank until a sound you cannot hear matters;
+smart glasses. The glasses show conversation transcripts until a critical sound happens;
 then one line in your line of sight says what it was and which side it came
 from. [Demo on a real G2.](https://youtu.be/71S9_XT-4Dg)
 
